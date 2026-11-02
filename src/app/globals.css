@@ -1,26 +1,90 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Nature palette: forest greens, moss, warm sand and bark browns. */
+@theme {
+  --color-forest-50: #f1f6f0;
+  --color-forest-100: #dce9d9;
+  --color-forest-200: #b9d3b3;
+  --color-forest-300: #8db686;
+  --color-forest-500: #4f8a4a;
+  --color-forest-600: #3b6f38;
+  --color-forest-700: #2f5a2e;
+  --color-forest-800: #264826;
+  --color-forest-900: #1d3820;
+  --color-sand-50: #fbf8f2;
+  --color-sand-100: #f5efe2;
+  --color-sand-200: #e9dfc8;
+  --color-bark-500: #8a6a4a;
+  --color-bark-700: #5b4330;
+  --color-sun-400: #e8b04b;
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-sand-50);
+  color: var(--color-forest-900);
+}
+
+/* Reusable bits */
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.75rem 1.25rem;
+  font-weight: 700;
+  transition: background-color 150ms, opacity 150ms;
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+@utility btn-primary {
+  background: var(--color-forest-600);
+  color: white;
+  &:hover:not(:disabled) {
+    background: var(--color-forest-700);
+  }
+}
+
+@utility btn-secondary {
+  background: white;
+  color: var(--color-forest-700);
+  border: 1px solid var(--color-forest-200);
+  &:hover:not(:disabled) {
+    background: var(--color-forest-50);
+  }
+}
+
+@utility card {
+  background: white;
+  border-radius: 1rem;
+  border: 1px solid var(--color-sand-200);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+@utility field {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-sand-200);
+  background: white;
+  padding: 0.7rem 0.9rem;
+  font-size: 1rem;
+  &:focus {
+    outline: 2px solid var(--color-forest-300);
+    outline-offset: 1px;
+  }
+}
+
+/* Keep Leaflet maps below our sticky header and bottom nav */
+.leaflet-container {
+  z-index: 0;
+  font-family: inherit;
+}
+
+.sighted-pin {
+  background: transparent;
+  border: none;
 }

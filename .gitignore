@@ -39,3 +39,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# ...but keep the template that lists which variables are needed
+!.env.example
