@@ -4,7 +4,14 @@ import { nextCookies } from "better-auth/next-js";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 
+// On Vercel, fall back to the URLs Vercel provides so BETTER_AUTH_URL is optional there.
+const vercelUrls = [process.env.VERCEL_PROJECT_PRODUCTION_URL, process.env.VERCEL_BRANCH_URL, process.env.VERCEL_URL]
+  .filter(Boolean)
+  .map((host) => `https://${host}`);
+
 export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL ?? vercelUrls[0],
+  trustedOrigins: vercelUrls,
   database: drizzleAdapter(db, { provider: "pg", schema }),
   emailAndPassword: {
     enabled: true,
