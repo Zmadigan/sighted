@@ -1,7 +1,7 @@
-import { BookOpen, Camera, Check, Leaf, Sparkles } from "lucide-react";
+import { BookOpen, Camera, Check, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { CategoryIcon } from "@/components/CategoryIcon";
-import { Logo } from "@/components/Logo";
+import { Logo, LogoMark } from "@/components/Logo";
 import { CATEGORIES, CATEGORY_INFO } from "@/lib/categories";
 import { getCurrentUser } from "@/lib/session";
 
@@ -140,7 +140,7 @@ export default async function Home() {
 
       <footer className="border-t border-sand-200 py-6 text-center text-sm text-bark-500">
         <span className="inline-flex items-center gap-1.5">
-          <Leaf className="h-4 w-4" aria-hidden /> Sighted: your wildlife journal
+          <LogoMark className="h-5 w-5" /> Sighted: your wildlife journal
         </span>
       </footer>
     </div>
