@@ -113,8 +113,8 @@ export default async function Home() {
                   <Feature>Unlimited journal entries</Feature>
                   <Feature>Life list and map</Feature>
                 </ul>
-                <Link href="/signup" className="btn btn-secondary mt-6 w-full">
-                  Get started
+                <Link href={user ? "/identify" : "/signup"} className="btn btn-secondary mt-6 w-full">
+                  {user ? "Open app" : "Get started"}
                 </Link>
               </div>
               <div className="card border-2 border-forest-500 p-6">
@@ -129,9 +129,15 @@ export default async function Home() {
                   <Feature>Personal wildlife goals</Feature>
                   <Feature>Your year in review</Feature>
                 </ul>
-                <Link href={user ? "/upgrade" : "/signup?next=/upgrade"} className="btn btn-primary mt-6 w-full">
-                  Go Pro
-                </Link>
+                {user?.plan === "pro" ? (
+                  <Link href="/upgrade" className="btn btn-secondary mt-6 w-full">
+                    <Check className="h-5 w-5" aria-hidden /> You&apos;re on Pro
+                  </Link>
+                ) : (
+                  <Link href={user ? "/upgrade" : "/signup?next=/upgrade"} className="btn btn-primary mt-6 w-full">
+                    Go Pro
+                  </Link>
+                )}
               </div>
             </div>
           </div>
