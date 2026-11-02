@@ -42,6 +42,14 @@ To connect a deployed site to Stripe (registers the webhook and saves the Stripe
 node scripts/setup-stripe.mjs https://your-site.vercel.app
 ```
 
+To take real payments, add `STRIPE_LIVE_SECRET_KEY` to `.env.local` and run the live version. It switches only the
+production site; local and preview deployments stay in test mode. `--reset-test-billing` clears test-mode
+subscriptions from accounts (complimentary Pro accounts like the demo are never touched):
+
+```bash
+node scripts/setup-stripe.mjs https://your-site.vercel.app --live --reset-test-billing
+```
+
 ## Scripts
 
 | Command | What it does |

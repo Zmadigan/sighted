@@ -34,9 +34,20 @@ export const PRO_LINE_ITEM: Stripe.Checkout.SessionCreateParams.LineItem = {
 /** Statuses where the user keeps Pro. past_due gives them time to fix a failed card. */
 const PRO_STATUSES: Stripe.Subscription.Status[] = ["active", "trialing", "past_due"];
 
+/** True when the saved customer exists for the current key (a test-mode customer doesn't exist in live mode). */
+async function customerExists(customerId: string) {
+  try {
+    const customer = await getStripe().customers.retrieve(customerId);
+    return !customer.deleted;
+  } catch (error) {
+    if (error instanceof Stripe.errors.StripeInvalidRequestError && error.code === "resource_missing") return false;
+    throw error;
+  }
+}
+
 /** Returns the user's Stripe customer, creating it the first time they upgrade. */
 export async function getOrCreateCustomer(u: { id: string; email: string; stripeCustomerId: string | null }) {
-  if (u.stripeCustomerId) return u.stripeCustomerId;
+  if (u.stripeCustomerId && (await customerExists(u.stripeCustomerId))) return u.stripeCustomerId;
   const customer = await getStripe().customers.create({ email: u.email, metadata: { userId: u.id } });
   await db.update(user).set({ stripeCustomerId: customer.id }).where(eq(user.id, u.id));
   return customer.id;
