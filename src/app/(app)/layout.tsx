@@ -1,3 +1,5 @@
+import { Crown } from "lucide-react";
+import Link from "next/link";
 import { BottomNav, TopNav } from "@/components/BottomNav";
 import { Logo } from "@/components/Logo";
 import { LogoutButton } from "@/components/LogoutButton";
@@ -13,8 +15,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Logo href="/journal" />
           <TopNav />
           <div className="flex items-center gap-3">
-            {user.plan === "pro" && (
-              <span className="rounded-full bg-sun-400 px-2 py-0.5 text-xs font-bold">PRO</span>
+            {user.plan === "pro" ? (
+              <Link href="/upgrade" className="rounded-full bg-sun-400 px-2 py-0.5 text-xs font-bold">
+                PRO
+              </Link>
+            ) : (
+              <Link
+                href="/upgrade"
+                className="inline-flex items-center gap-1 rounded-full bg-forest-600 px-2.5 py-1 text-xs font-bold text-white"
+              >
+                <Crown className="h-3.5 w-3.5" aria-hidden /> Upgrade
+              </Link>
             )}
             <LogoutButton />
           </div>

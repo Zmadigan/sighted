@@ -25,6 +25,9 @@ export const user = pgTable("user", {
   image: text("image"),
   // "free" or "pro"
   plan: text("plan").notNull().default("free"),
+  // Stripe billing (set once the user starts a subscription)
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

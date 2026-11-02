@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "limit",
-        message: `You've used all ${FREE_MONTHLY_LIMIT} free identifications this month. Sighted Pro with unlimited IDs is coming soon! Your free IDs reset on the 1st.`,
+        message: `You've used all ${FREE_MONTHLY_LIMIT} free identifications this month. Upgrade to Sighted Pro for unlimited IDs, or wait until your free IDs reset on the 1st.`,
       },
       { status: 402 },
     );

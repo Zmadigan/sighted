@@ -119,7 +119,7 @@ export default async function Home() {
               </div>
               <div className="card border-2 border-forest-500 p-6">
                 <h3 className="text-xl font-bold">
-                  Pro <span className="ml-1 rounded-full bg-sun-400 px-2 py-0.5 text-xs">Coming soon</span>
+                  Pro <span className="ml-1 rounded-full bg-sun-400 px-2 py-0.5 text-xs">Most popular</span>
                 </h3>
                 <p className="mt-1 text-3xl font-extrabold">
                   $4.99<span className="text-base font-semibold text-bark-500">/month</span>
@@ -129,8 +129,8 @@ export default async function Home() {
                   <Feature>Personal wildlife goals</Feature>
                   <Feature>Your year in review</Feature>
                 </ul>
-                <Link href="/signup" className="btn btn-primary mt-6 w-full">
-                  Sign up free today
+                <Link href={user ? "/upgrade" : "/signup?next=/upgrade"} className="btn btn-primary mt-6 w-full">
+                  Go Pro
                 </Link>
               </div>
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, CloudRain, ImageUp, LoaderCircle, MoonStar, ScanSearch, SearchX, Sprout } from "lucide-react";
+import { Camera, CloudRain, Crown, ImageUp, LoaderCircle, MoonStar, ScanSearch, SearchX, Sprout } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { Identification } from "@/lib/identify";
@@ -200,8 +200,10 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
       <p className="text-forest-800/80">{state.message}</p>
       {state.step === "limit" ? (
         <>
-          <span className="rounded-full bg-sun-400 px-3 py-1 text-sm font-bold">Sighted Pro — coming soon</span>
-          <Link href="/sightings/new" className="btn btn-secondary mt-2 w-full">
+          <Link href="/upgrade" className="btn btn-primary mt-2 w-full">
+            <Crown className="h-5 w-5" aria-hidden /> Upgrade to Pro — $4.99/month
+          </Link>
+          <Link href="/sightings/new" className="btn btn-secondary w-full">
             Add a sighting manually
           </Link>
         </>
@@ -215,5 +217,5 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
 }
 
 function limitMessage() {
-  return "You've used all 5 free identifications this month. Sighted Pro with unlimited IDs is coming soon! Your free IDs reset on the 1st. You can still add sightings manually.";
+  return "You've used all 5 free identifications this month. Upgrade to Sighted Pro for unlimited IDs, or wait until your free IDs reset on the 1st. You can still add sightings manually.";
 }

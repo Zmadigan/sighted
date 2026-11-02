@@ -13,6 +13,7 @@ Better Auth (email + password), the Claude API for identification, and Leaflet +
    - `BETTER_AUTH_SECRET`: any long random string
    - `BETTER_AUTH_URL`: `http://localhost:3000` locally
    - `ANTHROPIC_API_KEY`: from console.anthropic.com
+   - `STRIPE_SECRET_KEY`: Stripe Dashboard → Developers → API keys (use the `sk_test_` key while testing)
 3. Create the database tables: `npm run db:push`
 4. Create the demo account: `npm run seed`
 5. Start the app: `npm run dev` → http://localhost:3000
@@ -28,6 +29,17 @@ command; it takes priority over `.env.local`:
 ```bash
 DATABASE_URL="your-production-connection-string" npm run db:push
 DATABASE_URL="your-production-connection-string" npm run seed
+```
+
+## Payments (Stripe)
+
+Pro is a $4.99/month Stripe subscription. The price is defined in `src/lib/stripe.ts`, so nothing needs
+to be created in the Stripe dashboard. Test with card `4242 4242 4242 4242`, any future date and any CVC.
+
+To connect a deployed site to Stripe (registers the webhook and saves the Stripe secrets in Vercel):
+
+```bash
+node scripts/setup-stripe.mjs https://your-site.vercel.app
 ```
 
 ## Scripts
@@ -47,6 +59,7 @@ DATABASE_URL="your-production-connection-string" npm run seed
 - `src/app/(app)/`: logged-in pages (identify, journal, life list, map)
 - `src/lib/identify.ts`: Claude API call that identifies the animal
 - `src/lib/usage.ts`: free-plan monthly limit (5 IDs)
+- `src/lib/stripe.ts`, `src/app/actions/billing.ts`, `src/app/api/stripe/webhook/route.ts`: Pro subscription
 - `src/app/actions/sightings.ts`: save / edit / delete sightings
 - `src/db/schema.ts`: database tables
 - `scripts/seed.ts`: demo data
