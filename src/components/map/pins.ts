@@ -1,7 +1,9 @@
 import L from "leaflet";
 
+const DOT = '<span style="display:block;width:10px;height:10px;border-radius:50%;background:white"></span>';
+
 /** A teardrop map pin in any color, drawn with plain HTML (no image files needed). */
-export function pinIcon(color: string, emoji = "") {
+export function pinIcon(color: string, innerHtml = DOT) {
   return L.divIcon({
     className: "sighted-pin",
     iconSize: [32, 42],
@@ -11,7 +13,7 @@ export function pinIcon(color: string, emoji = "") {
       <svg width="32" height="42" viewBox="0 0 32 42" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))">
         <path d="M16 0C7.2 0 0 7 0 15.7 0 27.5 16 42 16 42s16-14.5 16-26.3C32 7 24.8 0 16 0z" fill="${color}" stroke="white" stroke-width="2"/>
       </svg>
-      <span style="position:absolute;top:6px;left:0;width:32px;text-align:center;font-size:15px;line-height:18px">${emoji}</span>
+      <span style="position:absolute;top:0;left:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:white">${innerHtml}</span>
     </div>`,
   });
 }

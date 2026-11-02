@@ -1,9 +1,10 @@
+import { ArrowLeft, CalendarDays, Pencil, Sprout } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CategoryBadge } from "@/components/CategoryIcon";
 import { DeleteSightingButton } from "@/components/DeleteSightingButton";
 import { SightingsMap } from "@/components/map";
 import { SightingThumb } from "@/components/SightingThumb";
-import { categoryInfo } from "@/lib/categories";
 import { formatDate } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { getSighting, photoUrl } from "@/lib/sightings";
@@ -14,12 +15,10 @@ export default async function SightingPage({ params }: PageProps<"/journal/[id]"
   const s = await getSighting(user.id, id);
   if (!s) notFound();
 
-  const info = categoryInfo(s.category);
-
   return (
     <article className="mx-auto max-w-xl">
-      <Link href="/journal" className="mb-3 inline-block text-sm font-semibold text-forest-600">
-        ← Journal
+      <Link href="/journal" className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-forest-600">
+        <ArrowLeft className="h-4 w-4" aria-hidden /> Journal
       </Link>
       <div className="card overflow-hidden">
         <SightingThumb
@@ -30,13 +29,12 @@ export default async function SightingPage({ params }: PageProps<"/journal/[id]"
         />
         <div className="space-y-4 p-5">
           <div>
-            <span className="rounded-full px-2 py-0.5 text-xs font-bold text-white" style={{ background: info.color }}>
-              {info.emoji} {info.label}
-            </span>
+            <CategoryBadge category={s.category} />
             <h1 className="mt-2 text-3xl font-extrabold">{s.commonName}</h1>
             {s.scientificName && <p className="italic text-bark-500">{s.scientificName}</p>}
-            <p className="mt-1 text-sm font-semibold">
-              📅 {formatDate(s.observedOn, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+            <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold">
+              <CalendarDays className="h-4 w-4 text-forest-600" aria-hidden />
+              {formatDate(s.observedOn, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
             </p>
           </div>
 
@@ -53,7 +51,7 @@ export default async function SightingPage({ params }: PageProps<"/journal/[id]"
               <ul className="space-y-2">
                 {s.funFacts.map((fact) => (
                   <li key={fact} className="flex gap-2">
-                    <span aria-hidden>🌱</span>
+                    <Sprout className="mt-0.5 h-4 w-4 shrink-0 text-forest-600" aria-hidden />
                     <span>{fact}</span>
                   </li>
                 ))}
@@ -83,7 +81,7 @@ export default async function SightingPage({ params }: PageProps<"/journal/[id]"
 
           <div className="flex gap-2">
             <Link href={`/journal/${s.id}/edit`} className="btn btn-secondary flex-1">
-              Edit
+              <Pencil className="h-4 w-4" aria-hidden /> Edit
             </Link>
             <DeleteSightingButton id={s.id} name={s.commonName} />
           </div>

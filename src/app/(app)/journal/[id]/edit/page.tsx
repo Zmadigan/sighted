@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SightingForm } from "@/components/SightingForm";
@@ -13,8 +14,8 @@ export default async function EditSightingPage({ params }: PageProps<"/journal/[
 
   return (
     <div className="mx-auto max-w-xl">
-      <Link href={`/journal/${s.id}`} className="mb-3 inline-block text-sm font-semibold text-forest-600">
-        ← Back
+      <Link href={`/journal/${s.id}`} className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-forest-600">
+        <ArrowLeft className="h-4 w-4" aria-hidden /> Back
       </Link>
       <div className="card p-5">
         <h1 className="mb-4 text-2xl font-extrabold">Edit sighting</h1>

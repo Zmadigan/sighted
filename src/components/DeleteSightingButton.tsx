@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useTransition } from "react";
 import { deleteSighting } from "@/app/actions/sightings";
 
@@ -16,6 +17,7 @@ export function DeleteSightingButton({ id, name }: { id: string; name: string })
         }
       }}
     >
+      <Trash2 className="h-4 w-4" aria-hidden />
       {pending ? "Deleting…" : "Delete"}
     </button>
   );

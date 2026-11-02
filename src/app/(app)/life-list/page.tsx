@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CategoryIcon } from "@/components/CategoryIcon";
 import { CATEGORIES, CATEGORY_INFO, categoryInfo, isCategory } from "@/lib/categories";
 import { formatDate } from "@/lib/format";
 import { requireUser } from "@/lib/session";
@@ -87,7 +88,12 @@ export default async function LifeListPage({ searchParams }: PageProps<"/life-li
               key={c}
               href={`/life-list?category=${c}`}
               active={filter === c}
-              label={`${CATEGORY_INFO[c].emoji} ${CATEGORY_INFO[c].label} · ${perCategory[c]}`}
+              label={
+                <>
+                  <CategoryIcon category={c} className="h-4 w-4" />
+                  {CATEGORY_INFO[c].label} · {perCategory[c]}
+                </>
+              }
             />
           ))}
         </div>
@@ -105,11 +111,10 @@ export default async function LifeListPage({ searchParams }: PageProps<"/life-li
               <li key={sp.key}>
                 <Link href={`/journal/${sp.firstSightingId}`} className="flex items-center gap-3 p-3 hover:bg-sand-50">
                   <span
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl"
-                    style={{ background: `${info.color}22` }}
-                    aria-hidden
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: `${info.color}1f`, color: info.color }}
                   >
-                    {info.emoji}
+                    <CategoryIcon category={sp.category} className="h-5 w-5" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-bold">{sp.commonName}</p>
@@ -130,11 +135,11 @@ export default async function LifeListPage({ searchParams }: PageProps<"/life-li
   );
 }
 
-function FilterChip({ href, active, label }: { href: string; active: boolean; label: string }) {
+function FilterChip({ href, active, label }: { href: string; active: boolean; label: React.ReactNode }) {
   return (
     <Link
       href={href}
-      className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-semibold ${
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-semibold ${
         active ? "border-forest-600 bg-forest-600 text-white" : "border-sand-200 bg-white text-bark-700"
       }`}
     >

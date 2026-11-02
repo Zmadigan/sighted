@@ -1,5 +1,6 @@
 "use client";
 
+import { ImagePlus, LocateFixed, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { saveSighting, type SightingInput } from "@/app/actions/sightings";
 import { CATEGORIES, CATEGORY_INFO, type Category } from "@/lib/categories";
@@ -136,11 +137,12 @@ export function SightingForm({
         {allowPhotoChange && (
           <div className="mt-2 flex gap-2">
             <button type="button" className="btn btn-secondary py-2 text-sm" onClick={() => fileInput.current?.click()}>
+              <ImagePlus className="h-4 w-4" aria-hidden />
               {preview ? "Change photo" : "Add a photo"}
             </button>
             {preview && (
               <button type="button" className="btn py-2 text-sm text-red-700" onClick={() => setPhoto(null)}>
-                Remove photo
+                <Trash2 className="h-4 w-4" aria-hidden /> Remove photo
               </button>
             )}
             <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={onPickPhoto} />
@@ -177,7 +179,7 @@ export function SightingForm({
           <select className="field" value={category} onChange={(e) => setCategory(e.target.value as Category)}>
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {CATEGORY_INFO[c].emoji} {CATEGORY_INFO[c].label}
+                {CATEGORY_INFO[c].label}
               </option>
             ))}
           </select>
@@ -201,11 +203,12 @@ export function SightingForm({
           <span className="text-sm font-semibold">Location</span>
           <button
             type="button"
-            className="text-sm font-semibold text-forest-600 underline"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-forest-600"
             onClick={() => locateMe()}
             disabled={locating}
           >
-            {locating ? "Finding you…" : "📍 Use my location"}
+            <LocateFixed className="h-4 w-4" aria-hidden />
+            {locating ? "Finding you…" : "Use my location"}
           </button>
         </div>
         <LocationPicker value={location} onChange={setLocation} color={CATEGORY_INFO[category].color} />

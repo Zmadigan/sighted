@@ -3,8 +3,10 @@
 import "leaflet/dist/leaflet.css";
 import Link from "next/link";
 import { useMemo } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
-import { CATEGORIES, CATEGORY_INFO, categoryInfo } from "@/lib/categories";
+import { CATEGORIES, CATEGORY_INFO } from "@/lib/categories";
+import { CategoryBadge, CategoryIcon } from "../CategoryIcon";
 import { formatDate } from "@/lib/format";
 import { DEFAULT_CENTER, pinIcon, TILE_ATTRIBUTION, TILE_URL } from "./pins";
 
@@ -29,7 +31,13 @@ export default function SightingsMapInner({
   const icons = useMemo(
     () =>
       Object.fromEntries(
-        CATEGORIES.map((c) => [c, pinIcon(CATEGORY_INFO[c].color, CATEGORY_INFO[c].emoji)]),
+        CATEGORIES.map((c) => [
+          c,
+          pinIcon(
+            CATEGORY_INFO[c].color,
+            renderToStaticMarkup(<CategoryIcon category={c} width={16} height={16} strokeWidth={2.5} />),
+          ),
+        ]),
       ),
     [],
   );
@@ -50,7 +58,6 @@ export default function SightingsMapInner({
     >
       <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
       {sightings.map((s) => {
-        const info = categoryInfo(s.category);
         return (
           <Marker key={s.id} position={[s.latitude, s.longitude]} icon={icons[s.category] ?? icons.other}>
             <Popup>
@@ -64,8 +71,9 @@ export default function SightingsMapInner({
                   />
                 )}
                 <p className="!m-0 text-base font-bold">{s.commonName}</p>
-                <p className="!m-0 text-xs text-bark-500">
-                  {info.emoji} {info.label} · {formatDate(s.observedOn)}
+                <p className="!m-0 mt-1 flex items-center gap-2 text-xs text-bark-500">
+                  <CategoryBadge category={s.category} />
+                  {formatDate(s.observedOn)}
                 </p>
                 <Link href={`/journal/${s.id}`} className="mt-1 inline-block font-semibold">
                   View sighting →

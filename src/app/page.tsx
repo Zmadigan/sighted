@@ -1,20 +1,23 @@
+import { BookOpen, Camera, Check, Leaf, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { CategoryIcon } from "@/components/CategoryIcon";
 import { Logo } from "@/components/Logo";
+import { CATEGORIES, CATEGORY_INFO } from "@/lib/categories";
 import { getCurrentUser } from "@/lib/session";
 
 const steps = [
   {
-    emoji: "📸",
+    Icon: Camera,
     title: "Snap a photo",
     text: "Use your phone camera on the trail, or upload a picture you already took.",
   },
   {
-    emoji: "✨",
+    Icon: Sparkles,
     title: "Get an instant ID",
     text: "AI tells you the species, its scientific name, and a few fun facts.",
   },
   {
-    emoji: "📔",
+    Icon: BookOpen,
     title: "Save it to your journal",
     text: "Add the date, a pin on the map and your notes. Watch your life list grow.",
   },
@@ -64,8 +67,16 @@ export default async function Home() {
               </Link>
             )}
           </div>
-          <div className="mt-10 text-5xl" aria-hidden>
-            🦉 🦌 🐢 🦋 🐟
+          <div className="mt-12 flex justify-center gap-3 sm:gap-4" aria-hidden>
+            {CATEGORIES.map((c) => (
+              <span
+                key={c}
+                className="flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-sm sm:h-14 sm:w-14"
+                style={{ background: CATEGORY_INFO[c].color }}
+              >
+                <CategoryIcon category={c} className="h-6 w-6 sm:h-7 sm:w-7" />
+              </span>
+            ))}
           </div>
         </section>
 
@@ -76,10 +87,10 @@ export default async function Home() {
             <ol className="mt-8 grid gap-4 sm:grid-cols-3">
               {steps.map((step, i) => (
                 <li key={step.title} className="card p-6">
-                  <div className="text-4xl" aria-hidden>
-                    {step.emoji}
-                  </div>
-                  <h3 className="mt-3 text-lg font-bold">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-forest-100 text-forest-700">
+                    <step.Icon className="h-6 w-6" aria-hidden />
+                  </span>
+                  <h3 className="mt-4 text-lg font-bold">
                     {i + 1}. {step.title}
                   </h3>
                   <p className="mt-1 text-forest-800/80">{step.text}</p>
@@ -98,9 +109,9 @@ export default async function Home() {
                 <h3 className="text-xl font-bold">Free</h3>
                 <p className="mt-1 text-3xl font-extrabold">$0</p>
                 <ul className="mt-4 space-y-2 text-forest-800/90">
-                  <li>✓ 5 AI identifications per month</li>
-                  <li>✓ Unlimited journal entries</li>
-                  <li>✓ Life list and map</li>
+                  <Feature>5 AI identifications per month</Feature>
+                  <Feature>Unlimited journal entries</Feature>
+                  <Feature>Life list and map</Feature>
                 </ul>
                 <Link href="/signup" className="btn btn-secondary mt-6 w-full">
                   Get started
@@ -114,9 +125,9 @@ export default async function Home() {
                   $4.99<span className="text-base font-semibold text-bark-500">/month</span>
                 </p>
                 <ul className="mt-4 space-y-2 text-forest-800/90">
-                  <li>✓ Unlimited AI identifications</li>
-                  <li>✓ Personal wildlife goals</li>
-                  <li>✓ Your year in review</li>
+                  <Feature>Unlimited AI identifications</Feature>
+                  <Feature>Personal wildlife goals</Feature>
+                  <Feature>Your year in review</Feature>
                 </ul>
                 <Link href="/signup" className="btn btn-primary mt-6 w-full">
                   Sign up free today
@@ -128,8 +139,19 @@ export default async function Home() {
       </main>
 
       <footer className="border-t border-sand-200 py-6 text-center text-sm text-bark-500">
-        🌿 Sighted: your wildlife journal
+        <span className="inline-flex items-center gap-1.5">
+          <Leaf className="h-4 w-4" aria-hidden /> Sighted: your wildlife journal
+        </span>
       </footer>
     </div>
+  );
+}
+
+function Feature({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-2">
+      <Check className="mt-0.5 h-5 w-5 shrink-0 text-forest-600" strokeWidth={2.5} aria-hidden />
+      <span>{children}</span>
+    </li>
   );
 }

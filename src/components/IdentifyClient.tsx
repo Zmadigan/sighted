@@ -1,10 +1,11 @@
 "use client";
 
+import { Camera, CloudRain, ImageUp, LoaderCircle, MoonStar, ScanSearch, SearchX, Sprout } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { Identification } from "@/lib/identify";
-import { CATEGORY_INFO } from "@/lib/categories";
 import { compressImage } from "@/lib/image";
+import { CategoryBadge } from "./CategoryIcon";
 import { SightingForm } from "./SightingForm";
 
 type State =
@@ -80,15 +81,15 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
   if (state.step === "pick") {
     return (
       <div className="card flex flex-col items-center gap-4 p-8 text-center">
-        <div className="text-6xl" aria-hidden>
-          🔍
-        </div>
+        <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-forest-100 text-forest-700">
+          <ScanSearch className="h-8 w-8" aria-hidden />
+        </span>
         <p className="text-forest-800/80">Take a photo of an animal, or choose one from your library.</p>
         <button type="button" className="btn btn-primary w-full" onClick={() => cameraInput.current?.click()}>
-          📸 Take a photo
+          <Camera className="h-5 w-5" aria-hidden /> Take a photo
         </button>
         <button type="button" className="btn btn-secondary w-full" onClick={() => uploadInput.current?.click()}>
-          🖼️ Upload a photo
+          <ImageUp className="h-5 w-5" aria-hidden /> Upload a photo
         </button>
         {hiddenInputs}
       </div>
@@ -103,7 +104,7 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
           <img src={photo} alt="Your photo" className="max-h-80 w-full object-cover opacity-70" />
         )}
         <div className="flex items-center justify-center gap-3 p-6 font-semibold text-forest-700">
-          <span className="h-5 w-5 animate-spin rounded-full border-2 border-forest-300 border-t-forest-700" />
+          <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden />
           Identifying… this takes a few seconds
         </div>
       </div>
@@ -112,7 +113,6 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
 
   if (state.step === "result") {
     const { result } = state;
-    const info = CATEGORY_INFO[result.category];
     return (
       <div className="card overflow-hidden">
         {photo && (
@@ -122,9 +122,7 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
         <div className="space-y-4 p-5">
           <div>
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
-              <span className="rounded-full px-2 py-0.5 text-white" style={{ background: info.color }}>
-                {info.emoji} {info.label}
-              </span>
+              <CategoryBadge category={result.category} />
               <span className={`rounded-full px-2 py-0.5 ${confidenceStyles[result.confidence]}`}>
                 {result.confidence} confidence
               </span>
@@ -138,7 +136,7 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
               <ul className="space-y-2">
                 {result.funFacts.map((fact) => (
                   <li key={fact} className="flex gap-2">
-                    <span aria-hidden>🌱</span>
+                    <Sprout className="mt-0.5 h-4 w-4 shrink-0 text-forest-600" aria-hidden />
                     <span>{fact}</span>
                   </li>
                 ))}
@@ -188,16 +186,16 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
 
   // Friendly "no animal", limit and error screens
   const content = {
-    "no-animal": { emoji: "🤔", title: "Hmm, we couldn't spot an animal" },
-    limit: { emoji: "🌙", title: "You've used this month's free IDs" },
-    error: { emoji: "🍂", title: "Something went wrong" },
+    "no-animal": { Icon: SearchX, title: "Hmm, we couldn't spot an animal" },
+    limit: { Icon: MoonStar, title: "You've used this month's free IDs" },
+    error: { Icon: CloudRain, title: "Something went wrong" },
   }[state.step];
 
   return (
     <div className="card flex flex-col items-center gap-3 p-8 text-center">
-      <div className="text-6xl" aria-hidden>
-        {content.emoji}
-      </div>
+      <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-sand-100 text-bark-700">
+        <content.Icon className="h-8 w-8" aria-hidden />
+      </span>
       <h2 className="text-xl font-extrabold">{content.title}</h2>
       <p className="text-forest-800/80">{state.message}</p>
       {state.step === "limit" ? (

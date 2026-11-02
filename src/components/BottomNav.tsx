@@ -1,13 +1,14 @@
 "use client";
 
+import { BookOpen, Camera, ListChecks, Map } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
-  { href: "/identify", label: "Identify", icon: "📸" },
-  { href: "/journal", label: "Journal", icon: "📔" },
-  { href: "/life-list", label: "Life List", icon: "🏅" },
-  { href: "/map", label: "Map", icon: "🗺️" },
+  { href: "/identify", label: "Identify", Icon: Camera },
+  { href: "/journal", label: "Journal", Icon: BookOpen },
+  { href: "/life-list", label: "Life List", Icon: ListChecks },
+  { href: "/map", label: "Map", Icon: Map },
 ];
 
 function useActive() {
@@ -25,12 +26,16 @@ export function BottomNav() {
           <li key={tab.href}>
             <Link
               href={tab.href}
-              className={`flex flex-col items-center gap-0.5 py-2 text-xs font-semibold ${
+              className={`flex flex-col items-center gap-1 pb-2 pt-2.5 text-[11px] font-bold ${
                 isActive(tab.href) ? "text-forest-700" : "text-bark-500"
               }`}
             >
-              <span className={`text-xl ${isActive(tab.href) ? "" : "opacity-70 grayscale"}`} aria-hidden>
-                {tab.icon}
+              <span
+                className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${
+                  isActive(tab.href) ? "bg-forest-100" : ""
+                }`}
+              >
+                <tab.Icon className="h-5 w-5" strokeWidth={isActive(tab.href) ? 2.5 : 2} aria-hidden />
               </span>
               {tab.label}
             </Link>

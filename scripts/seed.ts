@@ -409,7 +409,7 @@ async function main() {
       observedOn: daysAgoDate(s.daysAgo),
       latitude: s.lat,
       longitude: s.lng,
-      notes: `${s.notes}\n\n📍 ${s.place}`,
+      notes: `${s.notes}\n\nLocation: ${s.place}`,
     };
     await db
       .insert(sighting)
