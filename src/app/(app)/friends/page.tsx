@@ -3,10 +3,11 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { Feed } from "@/components/Feed";
+import { FindFriends, FriendRequests } from "@/components/FindFriends";
 import { DisplayName, InviteLink } from "@/components/FriendsClient";
 import { foundThisWeek } from "@/lib/bird-of-week";
 import { getFeed } from "@/lib/feed";
-import { getInviteCode, leaderboard, listFriends, type Period } from "@/lib/friends";
+import { getInviteCode, incomingRequests, leaderboard, listFriends, type Period } from "@/lib/friends";
 import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Friends · Sighted" };
@@ -24,19 +25,24 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
   const { period: rawPeriod, added, view } = await searchParams;
   const period: Period = rawPeriod === "year" || rawPeriod === "all" ? rawPeriod : "month";
   const showLeaderboard = view === "leaderboard";
+  const showAdd = view === "add";
 
   const h = await headers();
   const origin = h.get("x-forwarded-host")
     ? `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host")}`
     : `http://${h.get("host")}`;
 
-  const [code, friends] = await Promise.all([getInviteCode(me.id), listFriends(me.id)]);
+  const [code, friends, requests] = await Promise.all([
+    getInviteCode(me.id),
+    listFriends(me.id),
+    incomingRequests(me.id),
+  ]);
   const people = [{ id: me.id, name: me.name, isMe: true }, ...friends.map((f) => ({ ...f, isMe: false }))];
   const ids = people.map((p) => p.id);
   const [counts, foundBird, feed] = await Promise.all([
     leaderboard(ids, period),
     foundThisWeek(ids),
-    showLeaderboard ? null : getFeed(me.id, null),
+    showLeaderboard || showAdd ? null : getFeed(me.id, null),
   ]);
   const ranked = people
     .map((p) => ({ ...p, species: counts.get(p.id)?.species ?? 0, sightings: counts.get(p.id)?.sightings ?? 0 }))
@@ -44,10 +50,20 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <div>
-        <h1 className="text-2xl font-extrabold">Friends</h1>
-        <DisplayName name={me.name} />
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold">Friends</h1>
+          <DisplayName name={me.name} />
+        </div>
+        <Link
+          href={showAdd ? "/friends" : "/friends?view=add"}
+          className={`btn shrink-0 px-3 py-2 text-sm ${showAdd ? "btn-secondary" : "btn-primary"}`}
+        >
+          <UserPlus className="h-4 w-4" aria-hidden /> {showAdd ? "Done" : "Add friends"}
+        </Link>
       </div>
+
+      <FriendRequests requests={requests} />
 
       {typeof added === "string" && (
         <p className="rounded-lg bg-forest-100 p-3 text-sm font-semibold text-forest-800">
@@ -55,6 +71,10 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
         </p>
       )}
 
+      {showAdd && <InviteCard url={`${origin}/invite/${code}`} />}
+
+      {!showAdd && (
+      <>
       {/* Feed / Leaderboard switch */}
       <div className="flex gap-1 rounded-full bg-sand-100 p-1">
         {[
@@ -173,22 +193,30 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
       </section>
       )}
 
-      {(showLeaderboard || friends.length > 0) && <InviteCard url={`${origin}/invite/${code}`} />}
+      {showLeaderboard && <InviteCard url={`${origin}/invite/${code}`} />}
+      </>
+      )}
     </div>
   );
 }
 
 function InviteCard({ url }: { url: string }) {
   return (
-    <section className="card p-4">
-      <h2 className="mb-1 flex items-center gap-2 font-bold">
-        <UserPlus className="h-5 w-5 text-forest-600" aria-hidden /> Invite friends
-      </h2>
-      <p className="mb-3 text-sm text-bark-500">
-        Anyone who opens your link can add you. Friends see your sightings, photos and notes — never your locations or
-        anything you mark private.
-      </p>
-      <InviteLink url={url} />
+    <section className="card space-y-4 p-4" id="add-friends">
+      <div>
+        <h2 className="mb-2 flex items-center gap-2 font-bold">
+          <UserPlus className="h-5 w-5 text-forest-600" aria-hidden /> Find friends
+        </h2>
+        <FindFriends />
+      </div>
+      <div className="border-t border-sand-200 pt-4">
+        <h3 className="mb-1 font-bold">Or send your invite link</h3>
+        <p className="mb-3 text-sm text-bark-500">
+          Anyone who opens your link can add you. Friends see your sightings, photos and notes — never your locations or
+          anything you mark private.
+        </p>
+        <InviteLink url={url} />
+      </div>
     </section>
   );
 }

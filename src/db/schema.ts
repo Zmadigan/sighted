@@ -150,6 +150,21 @@ export const friendship = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.friendId] })],
 );
 
+// Pending friend requests from search ("from" asked to be friends with "to").
+export const friendRequest = pgTable(
+  "friend_request",
+  {
+    fromId: text("from_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    toId: text("to_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.fromId, t.toId] }), index("friend_request_to_idx").on(t.toId)],
+);
+
 // Pro "goals": e.g. see 50 species this year, or 10 bird species this month.
 export const goal = pgTable(
   "goal",

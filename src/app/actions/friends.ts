@@ -4,8 +4,8 @@ import { and, eq, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { friendship, user } from "@/db/schema";
-import { addFriendship, findUserByInviteCode } from "@/lib/friends";
+import { friendRequest, friendship, user } from "@/db/schema";
+import { addFriendship, areFriends, findUserByInviteCode, searchPeople, type PersonResult } from "@/lib/friends";
 import { requireUser } from "@/lib/session";
 
 export async function acceptInvite(code: string) {
@@ -38,4 +38,49 @@ export async function updateDisplayName(name: string): Promise<{ error?: string;
   await db.update(user).set({ name: clean, updatedAt: new Date() }).where(eq(user.id, me.id));
   revalidatePath("/friends");
   return { ok: true };
+}
+
+export async function findPeople(query: string): Promise<PersonResult[]> {
+  const me = await requireUser();
+  return searchPeople(me.id, query);
+}
+
+/** Sends a friend request (or, if they already asked you, makes you friends right away). */
+export async function sendFriendRequest(toId: string): Promise<PersonResult["status"] | null> {
+  const me = await requireUser();
+  if (toId === me.id) return null;
+  const [target] = await db.select({ id: user.id }).from(user).where(eq(user.id, toId));
+  if (!target) return null;
+  if (await areFriends(me.id, toId)) return "friend";
+
+  const [theyAsked] = await db
+    .select({ fromId: friendRequest.fromId })
+    .from(friendRequest)
+    .where(and(eq(friendRequest.fromId, toId), eq(friendRequest.toId, me.id)));
+  if (theyAsked) {
+    await addFriendship(me.id, toId);
+    revalidatePath("/", "layout");
+    return "friend";
+  }
+  await db.insert(friendRequest).values({ fromId: me.id, toId }).onConflictDoNothing();
+  revalidatePath("/friends");
+  return "requested";
+}
+
+export async function cancelFriendRequest(toId: string) {
+  const me = await requireUser();
+  await db.delete(friendRequest).where(and(eq(friendRequest.fromId, me.id), eq(friendRequest.toId, toId)));
+  revalidatePath("/friends");
+}
+
+export async function respondToRequest(fromId: string, accept: boolean) {
+  const me = await requireUser();
+  const [request] = await db
+    .select({ fromId: friendRequest.fromId })
+    .from(friendRequest)
+    .where(and(eq(friendRequest.fromId, fromId), eq(friendRequest.toId, me.id)));
+  if (!request) return;
+  if (accept) await addFriendship(me.id, fromId);
+  else await db.delete(friendRequest).where(and(eq(friendRequest.fromId, fromId), eq(friendRequest.toId, me.id)));
+  revalidatePath("/", "layout");
 }

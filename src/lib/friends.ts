@@ -1,8 +1,8 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, ne, or, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { friendship, sighting, user } from "@/db/schema";
+import { friendRequest, friendship, sighting, user } from "@/db/schema";
 
 /** The user's invite code, created the first time they open the Friends tab. */
 export async function getInviteCode(userId: string) {
@@ -35,6 +35,70 @@ export async function addFriendship(a: string, b: string) {
       { userId: b, friendId: a },
     ])
     .onConflictDoNothing();
+  // Any pending requests between them are now done.
+  await db
+    .delete(friendRequest)
+    .where(
+      or(
+        and(eq(friendRequest.fromId, a), eq(friendRequest.toId, b)),
+        and(eq(friendRequest.fromId, b), eq(friendRequest.toId, a)),
+      ),
+    );
+}
+
+export type PersonResult = {
+  id: string;
+  name: string;
+  status: "friend" | "requested" | "incoming" | "none";
+};
+
+/**
+ * Finds people by display name, or by their exact email. Results never include emails,
+ * and are capped so the search can't be used to list everyone.
+ */
+export async function searchPeople(meId: string, query: string): Promise<PersonResult[]> {
+  const q = query.trim().slice(0, 100);
+  if (q.length < 2) return [];
+  const byEmail = q.includes("@");
+  const pattern = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+  const people = await db
+    .select({ id: user.id, name: user.name })
+    .from(user)
+    .where(
+      and(
+        ne(user.id, meId),
+        byEmail ? sql`lower(${user.email}) = ${q.toLowerCase()}` : ilike(user.name, pattern),
+      ),
+    )
+    .orderBy(user.name)
+    .limit(10);
+  if (people.length === 0) return [];
+
+  const ids = people.map((p) => p.id);
+  const [friends, sent, received] = await Promise.all([
+    db.select({ id: friendship.friendId }).from(friendship).where(and(eq(friendship.userId, meId), inArray(friendship.friendId, ids))),
+    db.select({ id: friendRequest.toId }).from(friendRequest).where(and(eq(friendRequest.fromId, meId), inArray(friendRequest.toId, ids))),
+    db.select({ id: friendRequest.fromId }).from(friendRequest).where(and(eq(friendRequest.toId, meId), inArray(friendRequest.fromId, ids))),
+  ]);
+  const has = (rows: { id: string }[], id: string) => rows.some((r) => r.id === id);
+  return people.map((p) => ({
+    ...p,
+    status: has(friends, p.id) ? "friend" : has(received, p.id) ? "incoming" : has(sent, p.id) ? "requested" : "none",
+  }));
+}
+
+/** People waiting for you to accept their friend request, newest first. */
+export async function incomingRequests(meId: string) {
+  return db
+    .select({ id: user.id, name: user.name, sentAt: friendRequest.createdAt })
+    .from(friendRequest)
+    .innerJoin(user, eq(user.id, friendRequest.fromId))
+    .where(eq(friendRequest.toId, meId))
+    .orderBy(desc(friendRequest.createdAt));
+}
+
+export async function incomingRequestCount(meId: string) {
+  return db.$count(friendRequest, eq(friendRequest.toId, meId));
 }
 
 export async function listFriends(userId: string) {
