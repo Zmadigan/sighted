@@ -50,10 +50,12 @@ const events = [
   "customer.subscription.deleted",
 ];
 
-// The signing secret is only shown when an endpoint is created, so replace any old one for this URL.
+// The signing secret is only shown when an endpoint is created, so replace Sighted's old endpoint(s),
+// including ones for a previous web address.
 const existing = await stripe.webhookEndpoints.list({ limit: 100 });
-for (const endpoint of existing.data.filter((e) => e.url === url)) {
+for (const endpoint of existing.data.filter((e) => e.url === url || e.description === "Sighted")) {
   await stripe.webhookEndpoints.del(endpoint.id);
+  if (endpoint.url !== url) console.log(`✓ Removed old webhook ${endpoint.url}`);
 }
 const endpoint = await stripe.webhookEndpoints.create({ url, enabled_events: events, description: "Sighted" });
 console.log(`✓ Stripe webhook registered: ${url} (${live ? "LIVE mode" : "test mode"})`);
