@@ -8,7 +8,12 @@ import { listMappedSightings } from "@/lib/sightings";
 export const metadata: Metadata = { title: "My Map · Sighted" };
 
 // Only the most common groups get a legend entry; other sightings still show with their own pin color and icon.
-const LEGEND: Category[] = ["bird", "mammal", "fish"];
+const LEGEND: { category: Category; label: string }[] = [
+  { category: "bird", label: "Bird" },
+  { category: "mammal", label: "Mammal" },
+  { category: "fish", label: "Fish" },
+  { category: "insect", label: "Bug" },
+];
 
 export default async function MapPage() {
   const user = await requireUser();
@@ -27,10 +32,10 @@ export default async function MapPage() {
     <div>
       <h1 className="text-2xl font-extrabold">My map</h1>
       <ul className="my-3 flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold">
-        {LEGEND.map((c) => (
-          <li key={c} className="flex items-center gap-1">
-            <span className="inline-block h-3 w-3 rounded-full" style={{ background: CATEGORY_INFO[c].color }} />
-            {CATEGORY_INFO[c].label}
+        {LEGEND.map(({ category, label }) => (
+          <li key={category} className="flex items-center gap-1">
+            <span className="inline-block h-3 w-3 rounded-full" style={{ background: CATEGORY_INFO[category].color }} />
+            {label}
           </li>
         ))}
       </ul>
