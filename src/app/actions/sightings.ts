@@ -32,7 +32,8 @@ const SightingInput = z.object({
 
 export type SightingInput = z.input<typeof SightingInput>;
 
-export async function saveSighting(input: SightingInput): Promise<{ error: string }> {
+/** Validates and saves a sighting (new or edited) for the logged-in user. */
+async function persistSighting(input: SightingInput): Promise<{ id: string } | { error: string }> {
   const user = await requireUser();
   const parsed = SightingInput.safeParse(input);
   if (!parsed.success) {
@@ -46,7 +47,6 @@ export async function saveSighting(input: SightingInput): Promise<{ error: strin
     ...(photo !== undefined ? { photo } : {}),
   };
 
-  let savedId = id;
   if (id) {
     const updated = await db
       .update(sighting)
@@ -54,16 +54,28 @@ export async function saveSighting(input: SightingInput): Promise<{ error: strin
       .where(and(eq(sighting.id, id), eq(sighting.userId, user.id)))
       .returning({ id: sighting.id });
     if (updated.length === 0) return { error: "That sighting couldn't be found." };
-  } else {
-    const [created] = await db
-      .insert(sighting)
-      .values({ ...values, userId: user.id })
-      .returning({ id: sighting.id });
-    savedId = created.id;
+    return { id };
   }
+  const [created] = await db
+    .insert(sighting)
+    .values({ ...values, userId: user.id })
+    .returning({ id: sighting.id });
+  return { id: created.id };
+}
 
+/** Save from the form, then open the saved sighting. */
+export async function saveSighting(input: SightingInput): Promise<{ error: string }> {
+  const result = await persistSighting(input);
+  if ("error" in result) return result;
   revalidatePath("/", "layout");
-  redirect(`/journal/${savedId}`);
+  redirect(`/journal/${result.id}`);
+}
+
+/** Upload a sighting that was saved on the phone while offline (stays on the current page). */
+export async function uploadOfflineSighting(input: SightingInput) {
+  const result = await persistSighting(input);
+  if ("id" in result) revalidatePath("/", "layout");
+  return result;
 }
 
 export async function deleteSighting(id: string) {

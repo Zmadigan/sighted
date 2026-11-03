@@ -2,6 +2,7 @@ import { Crown, UserRound } from "lucide-react";
 import Link from "next/link";
 import { BottomNav, TopNav } from "@/components/BottomNav";
 import { Logo } from "@/components/Logo";
+import { OfflineSync } from "@/components/OfflineSync";
 import { requireUser } from "@/lib/session";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -36,6 +37,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
       </header>
+      <OfflineSync />
       {/* Extra bottom padding so content isn't hidden behind the phone tab bar */}
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-28 pt-4 md:pb-10">{children}</main>
       <BottomNav />

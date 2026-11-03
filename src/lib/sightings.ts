@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, isNotNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { sighting } from "@/db/schema";
 
@@ -20,11 +20,25 @@ export function photoUrl(s: { id: string; updatedAt: Date }) {
   return `/api/photos/${s.id}?v=${s.updatedAt.getTime()}`;
 }
 
-export async function listSightings(userId: string) {
+/** The user's sightings, newest first. `search` matches animal names and notes. */
+export async function listSightings(userId: string, search?: string) {
+  const term = search?.trim().slice(0, 100);
+  const pattern = term ? `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%` : null;
   return db
     .select(listColumns)
     .from(sighting)
-    .where(eq(sighting.userId, userId))
+    .where(
+      and(
+        eq(sighting.userId, userId),
+        pattern
+          ? or(
+              ilike(sighting.commonName, pattern),
+              ilike(sighting.scientificName, pattern),
+              ilike(sighting.notes, pattern),
+            )
+          : undefined,
+      ),
+    )
     .orderBy(desc(sighting.observedOn), desc(sighting.createdAt));
 }
 

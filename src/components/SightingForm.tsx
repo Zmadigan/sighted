@@ -1,10 +1,12 @@
 "use client";
 
-import { ImagePlus, LocateFixed, Lock, Trash2 } from "lucide-react";
+import { CloudUpload, ImagePlus, LocateFixed, Lock, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { saveSighting, type SightingInput } from "@/app/actions/sightings";
 import { CATEGORIES, CATEGORY_INFO, type Category } from "@/lib/categories";
-import { compressImage, todayLocal } from "@/lib/image";
+import { compressImage, readPhotoInfo, todayLocal, type PhotoInfo } from "@/lib/image";
+import { isNetworkError, queueSighting } from "@/lib/offline-queue";
 import { LocationPicker } from "./map";
 import type { LatLng } from "./map/LocationPickerInner";
 
@@ -27,12 +29,15 @@ export type SightingFormValues = {
 export function SightingForm({
   initial,
   newPhoto,
+  photoInfo,
   allowPhotoChange = true,
   submitLabel = "Save sighting",
 }: {
   initial: SightingFormValues;
   /** Photo just taken on the Identify screen (saved along with the sighting). */
   newPhoto?: string;
+  /** When/where that photo was taken, read from the photo itself. */
+  photoInfo?: PhotoInfo;
   allowPhotoChange?: boolean;
   submitLabel?: string;
 }) {
@@ -40,14 +45,19 @@ export function SightingForm({
   const [scientificName, setScientificName] = useState(initial.scientificName);
   const [category, setCategory] = useState<Category>(initial.category);
   // New sightings default to today, in the user's own time zone.
-  const [observedOn, setObservedOn] = useState(() => initial.observedOn ?? todayLocal());
+  const [observedOn, setObservedOn] = useState(() => initial.observedOn ?? photoInfo?.date ?? todayLocal());
   const [notes, setNotes] = useState(initial.notes ?? "");
   const [isPrivate, setIsPrivate] = useState(initial.isPrivate ?? false);
   const [location, setLocation] = useState<LatLng | null>(
     initial.latitude != null && initial.longitude != null
       ? { lat: initial.latitude, lng: initial.longitude }
-      : null,
+      : photoInfo?.lat != null && photoInfo.lng != null
+        ? { lat: photoInfo.lat, lng: photoInfo.lng }
+        : null,
   );
+  const [fromPhoto, setFromPhoto] = useState(() => describePhotoInfo(photoInfo));
+  // Once a photo has supplied the location, a late "where am I" answer must not move the pin.
+  const photoSetLocation = useRef(photoInfo?.lat != null);
   const [locating, setLocating] = useState(false);
   const [locationNote, setLocationNote] = useState<string | null>(null);
 
@@ -57,16 +67,19 @@ export function SightingForm({
   const fileInput = useRef<HTMLInputElement>(null);
 
   const [error, setError] = useState<string | null>(null);
+  const [savedOffline, setSavedOffline] = useState(false);
   const [saving, startSaving] = useTransition();
 
   function requestPosition() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        if (photoSetLocation.current) return setLocating(false);
         setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setLocationNote(null);
         setLocating(false);
       },
       () => {
+        if (photoSetLocation.current) return setLocating(false);
         setLocationNote("We couldn't get your location. Tap the map to place the pin.");
         setLocating(false);
       },
@@ -79,13 +92,14 @@ export function SightingForm({
       setLocationNote("Your browser can't share its location. Tap the map instead.");
       return;
     }
+    photoSetLocation.current = false;
     setLocating(true);
     requestPosition();
   }
 
   // New sightings start at the user's current location.
   useEffect(() => {
-    if (!initial.id && initial.latitude == null && "geolocation" in navigator) requestPosition();
+    if (!initial.id && initial.latitude == null && photoInfo?.lat == null && "geolocation" in navigator) requestPosition();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -93,6 +107,17 @@ export function SightingForm({
     const file = e.target.files?.[0];
     if (!file) return;
     try {
+      // For new sightings, fill in when/where the photo was taken (read before resizing removes it).
+      if (!initial.id) {
+        const info = await readPhotoInfo(file);
+        if (info.date) setObservedOn(info.date);
+        if (info.lat != null && info.lng != null) {
+          photoSetLocation.current = true;
+          setLocation({ lat: info.lat, lng: info.lng });
+          setLocationNote(null);
+        }
+        setFromPhoto(describePhotoInfo(info));
+      }
       setPhoto(await compressImage(file, 1024, 0.8));
     } catch {
       setError("We couldn't read that photo. Please try another one.");
@@ -117,10 +142,43 @@ export function SightingForm({
       photo,
     };
     startSaving(async () => {
-      // On success the server redirects to the saved sighting.
-      const result = await saveSighting(input);
-      if (result?.error) setError(result.error);
+      // No signal? Keep it on the phone; it uploads automatically later.
+      if (!navigator.onLine) {
+        await queueSighting(input);
+        setSavedOffline(true);
+        return;
+      }
+      try {
+        // On success the server redirects to the saved sighting.
+        const result = await saveSighting(input);
+        if (result?.error) setError(result.error);
+      } catch (error) {
+        if (!isNetworkError(error)) throw error;
+        await queueSighting(input);
+        setSavedOffline(true);
+      }
     });
+  }
+
+  if (savedOffline) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-6 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-forest-100 text-forest-700">
+          <CloudUpload className="h-7 w-7" aria-hidden />
+        </span>
+        <p className="text-lg font-extrabold">Saved on your phone</p>
+        <p className="text-forest-800/80">
+          There&apos;s no signal right now, so your {commonName || "sighting"} will upload automatically when you&apos;re
+          back online.
+        </p>
+        <a href="/sightings/new" className="btn btn-primary w-full">
+          Log another sighting
+        </a>
+        <Link href="/journal" className="btn btn-secondary w-full">
+          My journal
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -201,6 +259,12 @@ export function SightingForm({
         </label>
       </div>
 
+      {fromPhoto && (
+        <p className="-mt-2 flex items-center gap-1.5 rounded-lg bg-forest-50 px-3 py-2 text-xs font-semibold text-forest-700">
+          <ImagePlus className="h-4 w-4 shrink-0" aria-hidden /> {fromPhoto} You can change it below.
+        </p>
+      )}
+
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-sm font-semibold">Location</span>
@@ -260,4 +324,12 @@ export function SightingForm({
       </button>
     </form>
   );
+}
+
+/** "Date and location filled in from your photo." (or just one of them), or null. */
+function describePhotoInfo(info?: PhotoInfo) {
+  const parts = [info?.date && "Date", info?.lat != null && "location"].filter(Boolean) as string[];
+  if (parts.length === 0) return null;
+  const text = parts.join(" and ");
+  return `${text[0].toUpperCase()}${text.slice(1)} filled in from your photo.`;
 }

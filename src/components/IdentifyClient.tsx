@@ -4,7 +4,7 @@ import { Camera, CloudRain, Crown, PartyPopper, ImageUp, LoaderCircle, MoonStar,
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { Identification } from "@/lib/identify";
-import { compressImage } from "@/lib/image";
+import { compressImage, readPhotoInfo, type PhotoInfo } from "@/lib/image";
 import { BIRD_FOUND_EVENT } from "./BirdOfWeekCard";
 import { CategoryBadge } from "./CategoryIcon";
 import { SightingForm } from "./SightingForm";
@@ -29,6 +29,7 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
     initialRemaining === 0 ? { step: "limit", message: limitMessage() } : { step: "pick" },
   );
   const [photo, setPhoto] = useState<string | null>(null);
+  const [photoInfo, setPhotoInfo] = useState<PhotoInfo>({});
   const cameraInput = useRef<HTMLInputElement>(null);
   const uploadInput = useRef<HTMLInputElement>(null);
 
@@ -40,6 +41,8 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
     setState({ step: "loading" });
     let image: string;
     try {
+      // Read when/where it was taken first: resizing the photo removes that information.
+      setPhotoInfo(await readPhotoInfo(file));
       image = await compressImage(file);
     } catch {
       setState({ step: "error", message: "We couldn't read that photo. Please try another one." });
@@ -178,6 +181,7 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
         <SightingForm
           allowPhotoChange={false}
           newPhoto={photo ?? undefined}
+          photoInfo={photoInfo}
           initial={{
             commonName: result.commonName,
             scientificName: result.scientificName,
