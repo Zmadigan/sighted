@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, Pencil, Sprout } from "lucide-react";
+import { ArrowLeft, CalendarDays, Lock, Pencil, Sprout } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CategoryBadge } from "@/components/CategoryIcon";
@@ -29,7 +29,14 @@ export default async function SightingPage({ params }: PageProps<"/journal/[id]"
         />
         <div className="space-y-4 p-5">
           <div>
-            <CategoryBadge category={s.category} />
+            <span className="flex flex-wrap items-center gap-2">
+              <CategoryBadge category={s.category} />
+              {s.isPrivate && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-sand-100 px-2 py-0.5 text-xs font-bold text-bark-700">
+                  <Lock className="h-3.5 w-3.5" aria-hidden /> Private
+                </span>
+              )}
+            </span>
             <h1 className="mt-2 text-3xl font-extrabold">{s.commonName}</h1>
             {s.scientificName && <p className="italic text-bark-500">{s.scientificName}</p>}
             <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold">

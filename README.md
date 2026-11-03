@@ -71,6 +71,8 @@ node scripts/setup-stripe.mjs https://your-site.vercel.app --live --reset-test-b
 - `src/app/actions/sightings.ts`: save / edit / delete sightings
 - `src/app/(app)/friends/`, `src/app/invite/`, `src/lib/friends.ts`: friends, invite links and the leaderboard
   (friends see each other's sightings, photos and notes, but never locations)
+- `src/lib/feed.ts`, `src/components/Feed.tsx`: friends feed (photo sightings, "Nice spot!" reactions,
+  infinite scroll; private sightings and locations never appear)
 - `src/lib/bird-of-week.ts`, `src/components/BirdOfWeekCard.tsx`: Bird of the Week (Claude picks a findable bird per
   ~100 km area each Monday; it counts as found when a photo ID matches it)
 - `src/db/schema.ts`: database tables

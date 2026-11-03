@@ -99,6 +99,8 @@ export const sighting = pgTable(
     notes: text("notes"),
     // Compressed JPEG stored as a data URL ("data:image/jpeg;base64,...")
     photo: text("photo"),
+    // Private sightings stay out of the friends feed and friends' view of your journal
+    isPrivate: boolean("is_private").notNull().default(false),
     // Only used by the seed script so re-running it never creates duplicates
     seedKey: text("seed_key"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -137,6 +139,21 @@ export const friendship = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.friendId] })],
+);
+
+// "Nice spot!" reactions on feed posts: one per person per sighting.
+export const reaction = pgTable(
+  "reaction",
+  {
+    sightingId: uuid("sighting_id")
+      .notNull()
+      .references(() => sighting.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.sightingId, t.userId] })],
 );
 
 // Bird of the Week: one bird per area (a ~100 km grid square) per week, picked by Claude.

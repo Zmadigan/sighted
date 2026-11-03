@@ -1,6 +1,6 @@
 "use client";
 
-import { ImagePlus, LocateFixed, Trash2 } from "lucide-react";
+import { ImagePlus, LocateFixed, Lock, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { saveSighting, type SightingInput } from "@/app/actions/sightings";
 import { CATEGORIES, CATEGORY_INFO, type Category } from "@/lib/categories";
@@ -19,6 +19,7 @@ export type SightingFormValues = {
   latitude?: number | null;
   longitude?: number | null;
   notes?: string;
+  isPrivate?: boolean;
   /** URL to show the current photo (data URL or /api/photos/...) */
   photoPreview?: string | null;
 };
@@ -41,6 +42,7 @@ export function SightingForm({
   // New sightings default to today, in the user's own time zone.
   const [observedOn, setObservedOn] = useState(() => initial.observedOn ?? todayLocal());
   const [notes, setNotes] = useState(initial.notes ?? "");
+  const [isPrivate, setIsPrivate] = useState(initial.isPrivate ?? false);
   const [location, setLocation] = useState<LatLng | null>(
     initial.latitude != null && initial.longitude != null
       ? { lat: initial.latitude, lng: initial.longitude }
@@ -111,6 +113,7 @@ export function SightingForm({
       latitude: location?.lat ?? null,
       longitude: location?.lng ?? null,
       notes,
+      isPrivate,
       photo,
     };
     startSaving(async () => {
@@ -227,6 +230,23 @@ export function SightingForm({
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
+      </label>
+
+      <label className="flex items-start gap-3 rounded-xl border border-sand-200 bg-white p-3">
+        <input
+          type="checkbox"
+          className="mt-1 h-4 w-4 accent-forest-600"
+          checked={isPrivate}
+          onChange={(e) => setIsPrivate(e.target.checked)}
+        />
+        <span>
+          <span className="flex items-center gap-1.5 font-semibold">
+            <Lock className="h-4 w-4 text-bark-500" aria-hidden /> Keep private
+          </span>
+          <span className="block text-xs text-bark-500">
+            Friends won&apos;t see this sighting in their feed or on your profile.
+          </span>
+        </span>
       </label>
 
       {error && (

@@ -1,9 +1,11 @@
-import { Binoculars, ChevronRight, Trophy, UserPlus, Users } from "lucide-react";
+import { Binoculars, Camera, ChevronRight, Newspaper, Trophy, UserPlus, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
+import { Feed } from "@/components/Feed";
 import { DisplayName, InviteLink } from "@/components/FriendsClient";
 import { foundThisWeek } from "@/lib/bird-of-week";
+import { getFeed } from "@/lib/feed";
 import { getInviteCode, leaderboard, listFriends, type Period } from "@/lib/friends";
 import { requireUser } from "@/lib/session";
 
@@ -19,8 +21,9 @@ const MEDALS = ["bg-sun-400 text-forest-900", "bg-sand-200 text-bark-700", "bg-[
 
 export default async function FriendsPage({ searchParams }: PageProps<"/friends">) {
   const me = await requireUser();
-  const { period: rawPeriod, added } = await searchParams;
+  const { period: rawPeriod, added, view } = await searchParams;
   const period: Period = rawPeriod === "year" || rawPeriod === "all" ? rawPeriod : "month";
+  const showLeaderboard = view === "leaderboard";
 
   const h = await headers();
   const origin = h.get("x-forwarded-host")
@@ -30,7 +33,11 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
   const [code, friends] = await Promise.all([getInviteCode(me.id), listFriends(me.id)]);
   const people = [{ id: me.id, name: me.name, isMe: true }, ...friends.map((f) => ({ ...f, isMe: false }))];
   const ids = people.map((p) => p.id);
-  const [counts, foundBird] = await Promise.all([leaderboard(ids, period), foundThisWeek(ids)]);
+  const [counts, foundBird, feed] = await Promise.all([
+    leaderboard(ids, period),
+    foundThisWeek(ids),
+    showLeaderboard ? null : getFeed(me.id, null),
+  ]);
   const ranked = people
     .map((p) => ({ ...p, species: counts.get(p.id)?.species ?? 0, sightings: counts.get(p.id)?.sightings ?? 0 }))
     .sort((a, b) => b.species - a.species || b.sightings - a.sightings || a.name.localeCompare(b.name));
@@ -48,7 +55,45 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
         </p>
       )}
 
-      {/* Leaderboard */}
+      {/* Feed / Leaderboard switch */}
+      <div className="flex gap-1 rounded-full bg-sand-100 p-1">
+        {[
+          { href: "/friends", label: "Feed", Icon: Newspaper, active: !showLeaderboard },
+          { href: "/friends?view=leaderboard", label: "Leaderboard", Icon: Trophy, active: showLeaderboard },
+        ].map((t) => (
+          <Link
+            key={t.label}
+            href={t.href}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-sm font-semibold ${
+              t.active ? "bg-white text-forest-800 shadow-sm" : "text-bark-700"
+            }`}
+          >
+            <t.Icon className="h-4 w-4" aria-hidden /> {t.label}
+          </Link>
+        ))}
+      </div>
+
+      {feed && friends.length === 0 && <InviteCard url={`${origin}/invite/${code}`} />}
+
+      {feed &&
+        (feed.posts.length > 0 ? (
+          <Feed initial={feed.posts} initialCursor={feed.next} />
+        ) : (
+          <div className="card flex flex-col items-center gap-3 p-8 text-center">
+            <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-forest-100 text-forest-700">
+              <Camera className="h-8 w-8" aria-hidden />
+            </span>
+            <p className="font-semibold">No photos in your feed yet</p>
+            <p className="text-sm text-bark-500">
+              When you or your friends save a sighting with a photo, it shows up here.
+            </p>
+            <Link href="/identify" className="btn btn-primary mt-1">
+              <Camera className="h-5 w-5" aria-hidden /> Identify an animal
+            </Link>
+          </div>
+        ))}
+
+      {showLeaderboard && (
       <section className="card overflow-hidden">
         <div className="flex items-center gap-2 border-b border-sand-200 p-4">
           <Trophy className="h-5 w-5 text-sun-400" aria-hidden />
@@ -59,7 +104,7 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
           {PERIODS.map((p) => (
             <Link
               key={p.id}
-              href={`/friends?period=${p.id}`}
+              href={`/friends?view=leaderboard&period=${p.id}`}
               className={`flex-1 rounded-full py-1.5 text-center text-sm font-semibold ${
                 period === p.id ? "bg-forest-600 text-white" : "text-bark-700 hover:bg-sand-100"
               }`}
@@ -126,17 +171,24 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
           </p>
         )}
       </section>
+      )}
 
-      {/* Invite */}
-      <section className="card p-4">
-        <h2 className="mb-1 flex items-center gap-2 font-bold">
-          <UserPlus className="h-5 w-5 text-forest-600" aria-hidden /> Invite friends
-        </h2>
-        <p className="mb-3 text-sm text-bark-500">
-          Anyone who opens your link can add you. Friends see your sightings, photos and notes — never your locations.
-        </p>
-        <InviteLink url={`${origin}/invite/${code}`} />
-      </section>
+      {(showLeaderboard || friends.length > 0) && <InviteCard url={`${origin}/invite/${code}`} />}
     </div>
+  );
+}
+
+function InviteCard({ url }: { url: string }) {
+  return (
+    <section className="card p-4">
+      <h2 className="mb-1 flex items-center gap-2 font-bold">
+        <UserPlus className="h-5 w-5 text-forest-600" aria-hidden /> Invite friends
+      </h2>
+      <p className="mb-3 text-sm text-bark-500">
+        Anyone who opens your link can add you. Friends see your sightings, photos and notes — never your locations or
+        anything you mark private.
+      </p>
+      <InviteLink url={url} />
+    </section>
   );
 }

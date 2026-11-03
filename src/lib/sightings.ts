@@ -38,7 +38,13 @@ export async function listMappedSightings(userId: string) {
 export async function getSighting(userId: string, id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const [row] = await db
-    .select({ ...listColumns, confidence: sighting.confidence, funFacts: sighting.funFacts, notes: sighting.notes })
+    .select({
+      ...listColumns,
+      confidence: sighting.confidence,
+      funFacts: sighting.funFacts,
+      notes: sighting.notes,
+      isPrivate: sighting.isPrivate,
+    })
     .from(sighting)
     .where(and(eq(sighting.id, id), eq(sighting.userId, userId)));
   return row ?? null;

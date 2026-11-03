@@ -20,6 +20,7 @@ const SightingInput = z.object({
   latitude: z.number().min(-90).max(90).nullable(),
   longitude: z.number().min(-180).max(180).nullable(),
   notes: z.string().max(5000).optional().default(""),
+  isPrivate: z.boolean().optional().default(false),
   // A data URL for a new photo, null to remove it, or undefined to keep the current one.
   photo: z
     .string()

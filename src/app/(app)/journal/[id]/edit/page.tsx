@@ -32,6 +32,7 @@ export default async function EditSightingPage({ params }: PageProps<"/journal/[
             latitude: s.latitude,
             longitude: s.longitude,
             notes: s.notes ?? "",
+            isPrivate: s.isPrivate,
             photoPreview: s.hasPhoto ? photoUrl(s) : null,
           }}
         />

@@ -4,7 +4,7 @@ import { sighting } from "@/db/schema";
 import { areFriends } from "@/lib/friends";
 import { getCurrentUser } from "@/lib/session";
 
-// Serves a sighting's photo as a normal image file (only to its owner and their friends).
+// Serves a sighting's photo as a normal image file (to its owner, and to friends unless it's private).
 export async function GET(_request: Request, { params }: RouteContext<"/api/photos/[id]">) {
   const user = await getCurrentUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
@@ -13,10 +13,11 @@ export async function GET(_request: Request, { params }: RouteContext<"/api/phot
   if (!/^[0-9a-f-]{36}$/i.test(id)) return new Response("Not found", { status: 404 });
 
   const [row] = await db
-    .select({ photo: sighting.photo, ownerId: sighting.userId })
+    .select({ photo: sighting.photo, ownerId: sighting.userId, isPrivate: sighting.isPrivate })
     .from(sighting)
     .where(eq(sighting.id, id));
-  if (!row || (row.ownerId !== user.id && !(await areFriends(user.id, row.ownerId)))) {
+  const isOwner = row?.ownerId === user.id;
+  if (!row || (!isOwner && (row.isPrivate || !(await areFriends(user.id, row.ownerId))))) {
     return new Response("Not found", { status: 404 });
   }
 

@@ -77,7 +77,7 @@ export async function leaderboard(userIds: string[], period: Period) {
   return new Map(counts.map((c) => [c.userId, c]));
 }
 
-/** A friend's sightings for their profile. Locations are deliberately never selected. */
+/** A friend's sightings for their profile. Locations are never selected; private sightings are left out. */
 export async function listFriendSightings(friendId: string) {
   return db
     .select({
@@ -91,6 +91,6 @@ export async function listFriendSightings(friendId: string) {
       hasPhoto: sql<boolean>`${sighting.photo} is not null`,
     })
     .from(sighting)
-    .where(eq(sighting.userId, friendId))
+    .where(and(eq(sighting.userId, friendId), eq(sighting.isPrivate, false)))
     .orderBy(desc(sighting.observedOn), desc(sighting.createdAt));
 }
