@@ -12,7 +12,7 @@ const LEGEND: { category: Category; label: string }[] = [
   { category: "bird", label: "Bird" },
   { category: "mammal", label: "Mammal" },
   { category: "fish", label: "Fish" },
-  { category: "insect", label: "Bug" },
+  { category: "insect", label: "Insect" },
 ];
 
 export default async function MapPage() {
