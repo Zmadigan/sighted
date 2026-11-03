@@ -139,4 +139,38 @@ export const friendship = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.friendId] })],
 );
 
+// Bird of the Week: one bird per area (a ~100 km grid square) per week, picked by Claude.
+export const weeklyBird = pgTable(
+  "weekly_bird",
+  {
+    // e.g. "40_-74" (rounded latitude_longitude)
+    areaKey: text("area_key").notNull(),
+    // e.g. "2026-11-02" (the Monday the week starts on)
+    week: text("week").notNull(),
+    // Friendly name for the area, e.g. "New York City area"
+    regionName: text("region_name"),
+    // null when there's no suitable bird (e.g. the middle of the ocean)
+    commonName: text("common_name"),
+    scientificName: text("scientific_name"),
+    // Where and how to spot it this week
+    tip: text("tip"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.areaKey, t.week] })],
+);
+
+// Which area's bird each user is hunting this week, and when they found it (by photo ID).
+export const birdChallenge = pgTable(
+  "bird_challenge",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    week: text("week").notNull(),
+    areaKey: text("area_key").notNull(),
+    foundAt: timestamp("found_at"),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.week] })],
+);
+
 export type Sighting = typeof sighting.$inferSelect;

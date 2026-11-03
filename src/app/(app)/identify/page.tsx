@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BirdOfWeekCard } from "@/components/BirdOfWeekCard";
 import { IdentifyClient } from "@/components/IdentifyClient";
 import { requireUser } from "@/lib/session";
 import { FREE_MONTHLY_LIMIT, remainingIdentifications } from "@/lib/usage";
@@ -25,6 +26,7 @@ export default async function IdentifyPage() {
           Add without a photo
         </Link>
       </div>
+      <BirdOfWeekCard />
       <IdentifyClient initialRemaining={remaining} />
     </div>
   );

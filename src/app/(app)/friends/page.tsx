@@ -1,8 +1,9 @@
-import { ChevronRight, Trophy, UserPlus, Users } from "lucide-react";
+import { Binoculars, ChevronRight, Trophy, UserPlus, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { DisplayName, InviteLink } from "@/components/FriendsClient";
+import { foundThisWeek } from "@/lib/bird-of-week";
 import { getInviteCode, leaderboard, listFriends, type Period } from "@/lib/friends";
 import { requireUser } from "@/lib/session";
 
@@ -28,10 +29,8 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
 
   const [code, friends] = await Promise.all([getInviteCode(me.id), listFriends(me.id)]);
   const people = [{ id: me.id, name: me.name, isMe: true }, ...friends.map((f) => ({ ...f, isMe: false }))];
-  const counts = await leaderboard(
-    people.map((p) => p.id),
-    period,
-  );
+  const ids = people.map((p) => p.id);
+  const [counts, foundBird] = await Promise.all([leaderboard(ids, period), foundThisWeek(ids)]);
   const ranked = people
     .map((p) => ({ ...p, species: counts.get(p.id)?.species ?? 0, sightings: counts.get(p.id)?.sightings ?? 0 }))
     .sort((a, b) => b.species - a.species || b.sightings - a.sightings || a.name.localeCompare(b.name));
@@ -83,6 +82,14 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
                 <span className="min-w-0 flex-1 truncate font-bold">
                   {p.name}
                   {p.isMe && <span className="ml-1 font-normal text-bark-500">(you)</span>}
+                  {foundBird.has(p.id) && (
+                    <span
+                      className="ml-1.5 inline-flex translate-y-0.5 items-center rounded-full bg-sun-400 p-1 text-forest-900"
+                      title="Found this week's Bird of the Week"
+                    >
+                      <Binoculars className="h-3 w-3" aria-label="Found this week's Bird of the Week" />
+                    </span>
+                  )}
                 </span>
                 <span className="text-right">
                   <span className="block font-extrabold text-forest-700">{p.species} species</span>
@@ -104,6 +111,14 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
             );
           })}
         </ol>
+        {foundBird.size > 0 && (
+          <p className="flex items-center gap-1.5 border-t border-sand-200 px-4 py-2 text-xs text-bark-500">
+            <span className="inline-flex rounded-full bg-sun-400 p-1 text-forest-900">
+              <Binoculars className="h-3 w-3" aria-hidden />
+            </span>
+            found this week&apos;s Bird of the Week
+          </p>
+        )}
         {friends.length === 0 && (
           <p className="flex items-center gap-2 border-t border-sand-200 p-4 text-sm text-bark-500">
             <Users className="h-4 w-4 shrink-0" aria-hidden />

@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
+import { checkBirdOfWeekFound } from "@/lib/bird-of-week";
 import { identifyAnimal, IdentifyError } from "@/lib/identify";
 import { getCurrentUser } from "@/lib/session";
 import { FREE_MONTHLY_LIMIT, recordIdentification, remainingIdentifications } from "@/lib/usage";
@@ -33,8 +34,16 @@ export async function POST(request: Request) {
   try {
     const result = await identifyAnimal(body.image);
     await recordIdentification(user.id);
+    // Photo IDs are the only way to complete the Bird of the Week challenge.
+    const foundBirdOfWeek = result.foundAnimal
+      ? await checkBirdOfWeekFound(user.id, result).catch((error) => {
+          console.error("Bird of the Week check failed", error);
+          return false;
+        })
+      : false;
     return NextResponse.json({
       result,
+      foundBirdOfWeek,
       remaining: remaining === null ? null : remaining - 1,
     });
   } catch (error) {

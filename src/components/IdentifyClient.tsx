@@ -1,17 +1,18 @@
 "use client";
 
-import { Camera, CloudRain, Crown, ImageUp, LoaderCircle, MoonStar, ScanSearch, SearchX, Sprout } from "lucide-react";
+import { Camera, CloudRain, Crown, PartyPopper, ImageUp, LoaderCircle, MoonStar, ScanSearch, SearchX, Sprout } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { Identification } from "@/lib/identify";
 import { compressImage } from "@/lib/image";
+import { BIRD_FOUND_EVENT } from "./BirdOfWeekCard";
 import { CategoryBadge } from "./CategoryIcon";
 import { SightingForm } from "./SightingForm";
 
 type State =
   | { step: "pick" }
   | { step: "loading" }
-  | { step: "result"; result: Extract<Identification, { foundAnimal: true }> }
+  | { step: "result"; result: Extract<Identification, { foundAnimal: true }>; foundBirdOfWeek?: boolean }
   | { step: "save"; result: Extract<Identification, { foundAnimal: true }> }
   | { step: "no-animal"; message: string }
   | { step: "limit"; message: string }
@@ -57,8 +58,11 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
       if (!res.ok) return setState({ step: "error", message: data.error ?? "Something went wrong." });
 
       const result = data.result as Identification;
+      if (data.foundBirdOfWeek) window.dispatchEvent(new Event(BIRD_FOUND_EVENT));
       setState(
-        result.foundAnimal ? { step: "result", result } : { step: "no-animal", message: result.message },
+        result.foundAnimal
+          ? { step: "result", result, foundBirdOfWeek: Boolean(data.foundBirdOfWeek) }
+          : { step: "no-animal", message: result.message },
       );
     } catch {
       setState({ step: "error", message: "We couldn't reach Sighted. Check your connection and try again." });
@@ -118,6 +122,11 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
         {photo && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={photo} alt={result.commonName} className="max-h-80 w-full object-cover" />
+        )}
+        {state.foundBirdOfWeek && (
+          <div className="flex items-center gap-2 bg-sun-400 px-5 py-3 font-bold text-forest-900">
+            <PartyPopper className="h-5 w-5 shrink-0" aria-hidden /> You found your Bird of the Week!
+          </div>
         )}
         <div className="space-y-4 p-5">
           <div>
