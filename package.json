@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:push": "drizzle-kit push",
     "seed": "tsx scripts/seed.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "testers": "tsx scripts/create-testers.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.4.0",
