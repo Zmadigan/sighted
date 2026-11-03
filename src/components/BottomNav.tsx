@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Camera, ListChecks, Map } from "lucide-react";
+import { BookOpen, Camera, ListChecks, Map, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,6 +9,7 @@ const tabs = [
   { href: "/journal", label: "Journal", Icon: BookOpen },
   { href: "/life-list", label: "Life List", Icon: ListChecks },
   { href: "/map", label: "Map", Icon: Map },
+  { href: "/friends", label: "Friends", Icon: Users },
 ];
 
 function useActive() {
@@ -21,7 +22,7 @@ export function BottomNav() {
   const isActive = useActive();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-sand-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-      <ul className="mx-auto grid max-w-md grid-cols-4">
+      <ul className="mx-auto grid max-w-md grid-cols-5">
         {tabs.map((tab) => (
           <li key={tab.href}>
             <Link
@@ -31,7 +32,7 @@ export function BottomNav() {
               }`}
             >
               <span
-                className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${
+                className={`flex h-7 w-11 items-center justify-center rounded-full transition-colors ${
                   isActive(tab.href) ? "bg-forest-100" : ""
                 }`}
               >

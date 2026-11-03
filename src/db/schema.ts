@@ -28,6 +28,8 @@ export const user = pgTable("user", {
   // Stripe billing (set once the user starts a subscription)
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
+  // Personal invite link code for adding friends (created the first time it's needed)
+  inviteCode: text("invite_code"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -120,6 +122,21 @@ export const usage = pgTable(
     identifications: integer("identifications").notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.userId, t.month] })],
+);
+
+// Friendships are stored in both directions (A→B and B→A) so "my friends" is a simple lookup.
+export const friendship = pgTable(
+  "friendship",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    friendId: text("friend_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.friendId] })],
 );
 
 export type Sighting = typeof sighting.$inferSelect;

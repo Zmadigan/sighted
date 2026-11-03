@@ -69,5 +69,7 @@ node scripts/setup-stripe.mjs https://your-site.vercel.app --live --reset-test-b
 - `src/lib/usage.ts`: free-plan monthly limit (5 IDs)
 - `src/lib/stripe.ts`, `src/app/actions/billing.ts`, `src/app/api/stripe/webhook/route.ts`: Pro subscription
 - `src/app/actions/sightings.ts`: save / edit / delete sightings
+- `src/app/(app)/friends/`, `src/app/invite/`, `src/lib/friends.ts`: friends, invite links and the leaderboard
+  (friends see each other's sightings, photos and notes, but never locations)
 - `src/db/schema.ts`: database tables
 - `scripts/seed.ts`: demo data
