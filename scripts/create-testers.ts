@@ -1,5 +1,5 @@
 /**
- * Creates complimentary Pro tester accounts (tester1@…, tester2@…) for people trying Sighted.
+ * Creates complimentary Pro tester accounts (tester1@tester1.com, tester2@tester2.com, …) for people trying Sighted.
  *
  *   npm run testers            # create tester1–4 (existing ones are left as they are)
  *   npm run testers -- 6       # make sure tester1–6 exist
@@ -16,7 +16,6 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { account, user } from "../src/db/schema";
 
-const DOMAIN = "sightedwildlife.com";
 const FILE = "tester-accounts.txt";
 const count = Number(process.argv.find((a) => /^\d+$/.test(a)) ?? 4);
 const resetPasswords = process.argv.includes("--reset-passwords");
@@ -30,7 +29,7 @@ function newPassword() {
 async function main() {
   const created: string[] = [];
   for (let i = 1; i <= count; i++) {
-    const email = `tester${i}@${DOMAIN}`;
+    const email = `tester${i}@tester${i}.com`;
     let [row] = await db.select().from(user).where(eq(user.email, email));
     const isNew = !row;
     if (!row) {
