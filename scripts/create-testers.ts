@@ -21,11 +21,10 @@ const FILE = "tester-accounts.txt";
 const count = Number(process.argv.find((a) => /^\d+$/.test(a)) ?? 4);
 const resetPasswords = process.argv.includes("--reset-passwords");
 
-/** Easy to type on a phone: e.g. "fern-otter-4821". */
+/** Simple to type: an animal plus 4 random digits, e.g. "robin2847" (random digits keep it unguessable). */
 function newPassword() {
-  const words = ["fern", "otter", "heron", "maple", "finch", "cedar", "moss", "trout", "lynx", "wren", "birch", "vole"];
-  const pick = () => words[randomBytes(1)[0] % words.length];
-  return `${pick()}-${pick()}-${1000 + (randomBytes(2).readUInt16BE(0) % 9000)}`;
+  const animals = ["robin", "otter", "heron", "finch", "moose", "trout", "eagle", "bison", "raven", "llama"];
+  return `${animals[randomBytes(1)[0] % animals.length]}${1000 + (randomBytes(2).readUInt16BE(0) % 9000)}`;
 }
 
 async function main() {
