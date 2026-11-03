@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { ChevronRight, Crown, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { CategoryIcon } from "@/components/CategoryIcon";
+import { Goals } from "@/components/Goals";
 import { CATEGORIES, CATEGORY_INFO, categoryInfo, isCategory } from "@/lib/categories";
 import { formatDate } from "@/lib/format";
 import { requireUser } from "@/lib/session";
+import { goalsWithProgress, MAX_GOALS } from "@/lib/progress";
 import { listSightings } from "@/lib/sightings";
 
 export const metadata: Metadata = { title: "Life List · Sighted" };
@@ -78,6 +81,28 @@ export default async function LifeListPage({ searchParams }: PageProps<"/life-li
           <p className="text-sm font-semibold text-bark-500">species in {thisYear}</p>
         </div>
       </div>
+
+      {/* Pro: goals and year in review */}
+      <Goals goals={user.plan === "pro" ? await goalsWithProgress(user.id) : []} isPro={user.plan === "pro"} max={MAX_GOALS} />
+      <Link
+        href={user.plan === "pro" ? `/year-in-review?year=${thisYear}` : "/upgrade"}
+        className="card mt-3 flex items-center gap-3 p-4 hover:border-forest-300"
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-forest-700 text-white">
+          <Sparkles className="h-5 w-5" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-bold">Your {thisYear} in review</span>
+          <span className="block text-sm text-bark-500">Your year in wildlife, by the numbers.</span>
+        </span>
+        {user.plan === "pro" ? (
+          <ChevronRight className="h-5 w-5 text-bark-500" aria-hidden />
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-full bg-forest-600 px-3 py-1.5 text-xs font-bold text-white">
+            <Crown className="h-3.5 w-3.5" aria-hidden /> Pro
+          </span>
+        )}
+      </Link>
 
       {/* Category filter, which doubles as per-category counts */}
       <div className="-mx-4 mt-4 overflow-x-auto px-4">

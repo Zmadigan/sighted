@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+import { passwordResetEmail, sendEmail } from "./email";
 
 // On Vercel, fall back to the URLs Vercel provides so BETTER_AUTH_URL is optional there.
 const vercelUrls = [process.env.VERCEL_PROJECT_PRODUCTION_URL, process.env.VERCEL_BRANCH_URL, process.env.VERCEL_URL]
@@ -17,6 +18,27 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: false,
     minPasswordLength: 8,
+    // "Forgot password?" emails a link that's valid for one hour.
+    sendResetPassword: async ({ user, url }) => {
+      await sendEmail({ to: user.email, ...passwordResetEmail(user.name, url) });
+    },
+    resetPasswordTokenExpiresIn: 60 * 60,
+    // After a reset, sign out every device that was logged in with the old password.
+    revokeSessionsOnPasswordReset: true,
+  },
+  // Limits per internet connection, to stop bulk sign-ups, password guessing and email spam.
+  // On by default in production; set RATE_LIMIT=on to try it locally.
+  rateLimit: {
+    enabled: process.env.NODE_ENV === "production" || process.env.RATE_LIMIT === "on",
+    storage: "database",
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-up/email": { window: 60 * 60 * 24, max: 8 },
+      "/sign-in/email": { window: 60 * 5, max: 10 },
+      "/request-password-reset": { window: 60 * 60, max: 5 },
+      "/reset-password": { window: 60 * 60, max: 10 },
+    },
   },
   session: {
     // Stay logged in for 30 days; refresh the session once a day while in use.

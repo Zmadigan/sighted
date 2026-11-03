@@ -1,8 +1,7 @@
-import { Crown } from "lucide-react";
+import { Crown, UserRound } from "lucide-react";
 import Link from "next/link";
 import { BottomNav, TopNav } from "@/components/BottomNav";
 import { Logo } from "@/components/Logo";
-import { LogoutButton } from "@/components/LogoutButton";
 import { requireUser } from "@/lib/session";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -27,7 +26,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 <Crown className="h-3.5 w-3.5" aria-hidden /> Upgrade
               </Link>
             )}
-            <LogoutButton />
+            <Link
+              href="/account"
+              aria-label="Account"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-sand-100 text-bark-700 hover:bg-sand-200"
+            >
+              <UserRound className="h-4 w-4" aria-hidden />
+            </Link>
           </div>
         </div>
       </header>

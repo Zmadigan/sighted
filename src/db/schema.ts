@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   date,
   doublePrecision,
@@ -75,6 +76,14 @@ export const verification = pgTable("verification", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Better Auth's rate limits (stored in the database so every Vercel server shares them)
+export const rateLimit = pgTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
+
 // ---------------------------------------------------------------------------
 // App tables
 // ---------------------------------------------------------------------------
@@ -141,6 +150,24 @@ export const friendship = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.friendId] })],
 );
 
+// Pro "goals": e.g. see 50 species this year, or 10 bird species this month.
+export const goal = pgTable(
+  "goal",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // null = any category
+    category: text("category"),
+    // "month" or "year"
+    period: text("period").notNull(),
+    target: integer("target").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("goal_user_idx").on(t.userId)],
+);
+
 // "Nice spot!" reactions on feed posts: one per person per sighting.
 export const reaction = pgTable(
   "reaction",
@@ -188,6 +215,18 @@ export const birdChallenge = pgTable(
     foundAt: timestamp("found_at"),
   },
   (t) => [primaryKey({ columns: [t.userId, t.week] })],
+);
+
+// Free AI identifications per internet connection per month (IP is hashed, never stored raw),
+// so making lots of free accounts doesn't mean lots of free IDs.
+export const networkUsage = pgTable(
+  "network_usage",
+  {
+    ipHash: text("ip_hash").notNull(),
+    month: text("month").notNull(),
+    identifications: integer("identifications").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.ipHash, t.month] })],
 );
 
 export type Sighting = typeof sighting.$inferSelect;

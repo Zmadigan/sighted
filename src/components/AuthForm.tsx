@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
-export function AuthForm({ mode, next }: { mode: "signup" | "login"; next?: string }) {
+export function AuthForm({ mode, next, notice }: { mode: "signup" | "login"; next?: string; notice?: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +26,11 @@ export function AuthForm({ mode, next }: { mode: "signup" | "login"; next?: stri
         : await authClient.signIn.email({ email, password, rememberMe: true });
 
     if (result.error) {
-      setError(result.error.message ?? "Something went wrong. Please try again.");
+      setError(
+        result.error.status === 429
+          ? "Too many attempts from this network. Please wait a while and try again."
+          : (result.error.message ?? "Something went wrong. Please try again."),
+      );
       setLoading(false);
       return;
     }
@@ -39,6 +43,7 @@ export function AuthForm({ mode, next }: { mode: "signup" | "login"; next?: stri
   return (
     <form onSubmit={onSubmit} className="card w-full max-w-sm space-y-4 p-6">
       <h1 className="text-2xl font-extrabold">{isSignup ? "Create your journal" : "Welcome back"}</h1>
+      {notice && <p className="rounded-lg bg-forest-100 p-3 text-sm font-semibold text-forest-800">{notice}</p>}
       <label className="block">
         <span className="mb-1 block text-sm font-semibold">Email</span>
         <input
@@ -61,7 +66,13 @@ export function AuthForm({ mode, next }: { mode: "signup" | "login"; next?: stri
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        {isSignup && <span className="mt-1 block text-xs text-bark-500">At least 8 characters</span>}
+        {isSignup ? (
+          <span className="mt-1 block text-xs text-bark-500">At least 8 characters</span>
+        ) : (
+          <Link href="/forgot-password" className="mt-1 block text-right text-xs font-semibold text-forest-600">
+            Forgot password?
+          </Link>
+        )}
       </label>
       {error && (
         <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
@@ -71,6 +82,19 @@ export function AuthForm({ mode, next }: { mode: "signup" | "login"; next?: stri
       <button type="submit" className="btn btn-primary w-full" disabled={loading}>
         {loading ? "One moment…" : isSignup ? "Sign up" : "Log in"}
       </button>
+      {isSignup && (
+        <p className="text-center text-xs text-bark-500">
+          By signing up you agree to our{" "}
+          <Link href="/terms" className="underline">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="underline">
+            Privacy Policy
+          </Link>
+          .
+        </p>
+      )}
       <p className="text-center text-sm">
         {isSignup ? "Already have an account? " : "New to Sighted? "}
         <Link

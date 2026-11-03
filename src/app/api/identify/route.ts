@@ -3,7 +3,15 @@ import { NextResponse } from "next/server";
 import { checkBirdOfWeekFound } from "@/lib/bird-of-week";
 import { identifyAnimal, IdentifyError } from "@/lib/identify";
 import { getCurrentUser } from "@/lib/session";
-import { FREE_MONTHLY_LIMIT, recordIdentification, remainingIdentifications } from "@/lib/usage";
+import {
+  FREE_MONTHLY_LIMIT,
+  FREE_NETWORK_MONTHLY_LIMIT,
+  networkKey,
+  networkUsageThisMonth,
+  recordIdentification,
+  recordNetworkIdentification,
+  remainingIdentifications,
+} from "@/lib/usage";
 
 // Give Claude time to look at the photo (Vercel's default can be shorter).
 export const maxDuration = 60;
@@ -23,6 +31,19 @@ export async function POST(request: Request) {
     );
   }
 
+  // Free IDs are also capped per internet connection, so extra free accounts don't add free IDs.
+  const ipHash = remaining === null ? null : networkKey(request.headers);
+  if (ipHash && (await networkUsageThisMonth(ipHash)) >= FREE_NETWORK_MONTHLY_LIMIT) {
+    return NextResponse.json(
+      {
+        error: "limit",
+        message:
+          "This network has used all of its free identifications this month. Upgrade to Sighted Pro for unlimited IDs, or try again on the 1st.",
+      },
+      { status: 402 },
+    );
+  }
+
   const body = (await request.json().catch(() => null)) as { image?: unknown } | null;
   if (!body || typeof body.image !== "string") {
     return NextResponse.json({ error: "No photo was received." }, { status: 400 });
@@ -34,6 +55,7 @@ export async function POST(request: Request) {
   try {
     const result = await identifyAnimal(body.image);
     await recordIdentification(user.id);
+    if (ipHash) await recordNetworkIdentification(ipHash);
     // Photo IDs are the only way to complete the Bird of the Week challenge.
     const foundBirdOfWeek = result.foundAnimal
       ? await checkBirdOfWeekFound(user.id, result).catch((error) => {

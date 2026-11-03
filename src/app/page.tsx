@@ -23,8 +23,9 @@ const steps = [
   },
 ];
 
-export default async function Home() {
+export default async function Home({ searchParams }: PageProps<"/">) {
   const user = await getCurrentUser();
+  const { deleted } = await searchParams;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -49,6 +50,11 @@ export default async function Home() {
       </header>
 
       <main className="flex-1">
+        {deleted && (
+          <p className="mx-auto mt-4 max-w-md rounded-lg bg-forest-100 px-4 py-3 text-center text-sm font-semibold text-forest-800">
+            Your account has been deleted. Thanks for spotting with us.
+          </p>
+        )}
         {/* Hero */}
         <section className="mx-auto max-w-5xl px-4 pb-16 pt-10 text-center sm:pt-20">
           <p className="mb-4 inline-block rounded-full bg-forest-100 px-3 py-1 text-sm font-semibold text-forest-700">
@@ -147,6 +153,14 @@ export default async function Home() {
       <footer className="border-t border-sand-200 py-6 text-center text-sm text-bark-500">
         <span className="inline-flex items-center gap-1.5">
           <LogoMark className="h-5 w-5" /> Sighted: your wildlife journal
+        </span>
+        <span className="mt-2 flex justify-center gap-4">
+          <Link href="/privacy" className="underline">
+            Privacy
+          </Link>
+          <Link href="/terms" className="underline">
+            Terms
+          </Link>
         </span>
       </footer>
     </div>
