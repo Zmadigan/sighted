@@ -50,6 +50,17 @@ subscriptions from accounts (complimentary Pro accounts like the demo are never 
 node scripts/setup-stripe.mjs https://your-site.vercel.app --live --reset-test-billing
 ```
 
+## Email (Resend)
+
+Password-reset emails are sent with Resend from your own domain. With `RESEND_API_KEY` in `.env.local`, this adds the
+domain to Resend, adds its DNS records in Vercel, and saves the email settings to Vercel:
+
+```bash
+node scripts/setup-email.mjs yourdomain.com
+```
+
+Without a key, local emails are printed in the dev server's terminal instead.
+
 ## Scripts
 
 | Command | What it does |
