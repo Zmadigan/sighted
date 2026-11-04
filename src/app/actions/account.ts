@@ -2,9 +2,11 @@
 
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { user } from "@/db/schema";
+import { sighting, user } from "@/db/schema";
+import { deletePhotos, storePhoto } from "@/lib/photo-storage";
 import { requireUser } from "@/lib/session";
 import { getStripe } from "@/lib/stripe";
 
@@ -32,7 +34,10 @@ export async function deleteAccount(confirmation: string): Promise<{ error: stri
     }
   }
 
-  await db.delete(user).where(eq(user.id, me.id));
+  // Collect their photos first: the database delete removes the rows, then the files are deleted.
+  const photos = await db.select({ photo: sighting.photo }).from(sighting).where(eq(sighting.userId, me.id));
+  const [deleted] = await db.delete(user).where(eq(user.id, me.id)).returning({ image: user.image });
+  await deletePhotos([...photos.map((p) => p.photo), deleted?.image]);
   redirect("/?deleted=1");
 }
 
@@ -42,7 +47,23 @@ export async function updateAvatar(image: string | null): Promise<{ error?: stri
   if (image !== null && (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image) || image.length > 300_000)) {
     return { error: "That picture couldn't be used. Please try another." };
   }
-  await db.update(user).set({ image, updatedAt: new Date() }).where(eq(user.id, me.id));
+  const [current] = await db.select({ image: user.image }).from(user).where(eq(user.id, me.id));
+  const stored = image ? await storePhoto(image, "avatars") : null;
+  await db.update(user).set({ image: stored, updatedAt: new Date() }).where(eq(user.id, me.id));
+  await deletePhotos([current?.image]);
   revalidatePath("/", "layout");
   return {};
+}
+
+/** Hides the "Get started" checklist on this device. */
+export async function hideGetStarted() {
+  await requireUser();
+  (await cookies()).set("sighted_get_started_hidden", "1", {
+    maxAge: 60 * 60 * 24 * 365,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+  revalidatePath("/", "layout");
 }

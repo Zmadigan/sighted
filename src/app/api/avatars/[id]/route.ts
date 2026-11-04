@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schema";
+import { photoResponse } from "@/lib/photo-storage";
 import { getCurrentUser } from "@/lib/session";
 
 function initials(name: string) {
@@ -30,10 +31,8 @@ export async function GET(_request: Request, { params }: RouteContext<"/api/avat
 
   // Short cache so a friend's new picture shows up within a few minutes (your own uses ?v= to update instantly).
   const cache = { "Cache-Control": "private, max-age=300" };
-  const match = row.image && /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/.exec(row.image);
-  if (match) {
-    return new Response(Buffer.from(match[2], "base64"), { headers: { "Content-Type": match[1], ...cache } });
-  }
+  const photo = await photoResponse(row.image, cache["Cache-Control"]);
+  if (photo) return photo;
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6f38"/><text x="32" y="33" dominant-baseline="middle" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="26" font-weight="700" fill="#fff">${escapeXml(initials(row.name))}</text></svg>`;
   return new Response(svg, { headers: { "Content-Type": "image/svg+xml", ...cache } });

@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { sighting } from "@/db/schema";
 import { achievementSnapshot } from "@/lib/achievements";
 import { CATEGORIES } from "@/lib/categories";
+import { deletePhotos, storePhoto } from "@/lib/photo-storage";
 import { requireUser } from "@/lib/session";
 
 const SightingInput = z.object({
@@ -41,11 +42,25 @@ async function persistSighting(input: SightingInput): Promise<{ id: string } | {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
   }
   const { id, photo, ...data } = parsed.data;
+
+  // When editing, remember the old photo so it can be deleted if it's replaced or removed.
+  let oldPhoto: string | null = null;
+  if (id) {
+    const [existing] = await db
+      .select({ photo: sighting.photo })
+      .from(sighting)
+      .where(and(eq(sighting.id, id), eq(sighting.userId, user.id)));
+    if (!existing) return { error: "That sighting couldn't be found." };
+    oldPhoto = existing.photo;
+  }
+
+  // New photos go to photo storage; the database only keeps their address.
+  const storedPhoto = photo ? await storePhoto(photo, "sightings") : photo;
   const values = {
     ...data,
     scientificName: data.scientificName || null,
     notes: data.notes || null,
-    ...(photo !== undefined ? { photo } : {}),
+    ...(storedPhoto !== undefined ? { photo: storedPhoto } : {}),
   };
 
   if (id) {
@@ -54,7 +69,11 @@ async function persistSighting(input: SightingInput): Promise<{ id: string } | {
       .set({ ...values, updatedAt: new Date() })
       .where(and(eq(sighting.id, id), eq(sighting.userId, user.id)))
       .returning({ id: sighting.id });
-    if (updated.length === 0) return { error: "That sighting couldn't be found." };
+    if (updated.length === 0) {
+      await deletePhotos([storedPhoto]);
+      return { error: "That sighting couldn't be found." };
+    }
+    if (photo !== undefined) await deletePhotos([oldPhoto]);
     return { id };
   }
   const [created] = await db
@@ -89,7 +108,11 @@ export async function uploadOfflineSighting(input: SightingInput) {
 
 export async function deleteSighting(id: string) {
   const user = await requireUser();
-  await db.delete(sighting).where(and(eq(sighting.id, id), eq(sighting.userId, user.id)));
+  const deleted = await db
+    .delete(sighting)
+    .where(and(eq(sighting.id, id), eq(sighting.userId, user.id)))
+    .returning({ photo: sighting.photo });
+  await deletePhotos(deleted.map((d) => d.photo));
   revalidatePath("/", "layout");
   redirect("/journal");
 }

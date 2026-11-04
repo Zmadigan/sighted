@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { BookOpen, Camera, LayoutGrid, List, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
 import { CategoryBadge } from "@/components/CategoryIcon";
+import { GetStarted } from "@/components/GetStarted";
 import { SightingThumb } from "@/components/SightingThumb";
 import { formatDate } from "@/lib/format";
 import { requireUser } from "@/lib/session";
@@ -36,6 +37,8 @@ export default async function JournalPage({ searchParams }: PageProps<"/journal"
           <Plus className="h-4 w-4" aria-hidden /> Add manually
         </Link>
       </div>
+
+      <GetStarted userId={user.id} />
 
       <div className="mb-4 flex items-center gap-2">
       <form action="/journal" className="relative flex-1">
