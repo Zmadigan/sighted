@@ -3,7 +3,7 @@ import { ArrowLeft, CalendarDays, UserMinus } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { removeFriend } from "@/app/actions/friends";
-import { BadgeIcon, RankPill, StreakPill } from "@/components/Achievements";
+import { BadgeGrid, BadgeIcon, RankPill, StreakPill } from "@/components/Achievements";
 import { CategoryBadge } from "@/components/CategoryIcon";
 import { SightingThumb } from "@/components/SightingThumb";
 import { db } from "@/db";
@@ -39,6 +39,7 @@ export default async function FriendPage({ params, searchParams }: PageProps<"/f
   }
   const lifeList = [...species.values()].sort((a, b) => a.commonName.localeCompare(b.commonName));
   const showLifeList = tab === "life-list";
+  const showBadges = tab === "badges";
 
   return (
     <div className="mx-auto max-w-xl">
@@ -54,19 +55,24 @@ export default async function FriendPage({ params, searchParams }: PageProps<"/f
         <StreakPill weeks={stats.streak} />
       </div>
       {earnedBadges.length > 0 && (
-        <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Badges">
+        <Link
+          href={`/friends/${id}?tab=badges`}
+          className="mt-3 flex flex-wrap items-center gap-1.5"
+          aria-label={`See ${friend.name}'s ${earnedBadges.length} badges`}
+        >
           {earnedBadges.map((b) => (
-            <li key={b.id} title={`${b.name}: ${b.description}`}>
+            <span key={b.id} title={`${b.name}: ${b.description}`}>
               <BadgeIcon badge={b} earned size="sm" />
-            </li>
+            </span>
           ))}
-        </ul>
+        </Link>
       )}
 
       <div className="my-4 flex gap-1 rounded-full bg-sand-100 p-1">
         {[
-          { href: `/friends/${id}`, label: "Sightings", active: !showLifeList },
+          { href: `/friends/${id}`, label: "Sightings", active: !showLifeList && !showBadges },
           { href: `/friends/${id}?tab=life-list`, label: "Life list", active: showLifeList },
+          { href: `/friends/${id}?tab=badges`, label: `Badges · ${earnedBadges.length}`, active: showBadges },
         ].map((t) => (
           <Link
             key={t.label}
@@ -80,7 +86,13 @@ export default async function FriendPage({ params, searchParams }: PageProps<"/f
         ))}
       </div>
 
-      {sightings.length === 0 ? (
+      {showBadges ? (
+        earnedBadges.length > 0 ? (
+          <BadgeGrid stats={stats} onlyEarned />
+        ) : (
+          <p className="card p-8 text-center text-bark-500">{friend.name} hasn&apos;t unlocked any badges yet.</p>
+        )
+      ) : sightings.length === 0 ? (
         <p className="card p-8 text-center text-bark-500">{friend.name} hasn&apos;t logged any sightings yet.</p>
       ) : showLifeList ? (
         <ul className="card divide-y divide-sand-200">

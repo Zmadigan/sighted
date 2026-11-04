@@ -50,8 +50,10 @@ export function BadgeIcon({ badge, earned, size = "md" }: { badge: Badge; earned
 }
 
 /** Grid of every badge: earned ones in gold, locked ones grey with progress. */
-export function BadgeGrid({ stats }: { stats: Stats }) {
-  const badges = badgeProgress(stats).sort((a, b) => Number(b.earned) - Number(a.earned));
+export function BadgeGrid({ stats, onlyEarned = false }: { stats: Stats; onlyEarned?: boolean }) {
+  const badges = badgeProgress(stats)
+    .filter((b) => !onlyEarned || b.earned)
+    .sort((a, b) => Number(b.earned) - Number(a.earned));
   return (
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {badges.map((b) => (
