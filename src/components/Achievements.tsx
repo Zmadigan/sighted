@@ -1,5 +1,6 @@
 import { ChevronRight, Flame, Lock, PartyPopper } from "lucide-react";
 import Link from "next/link";
+import { Confetti } from "@/components/Confetti";
 import type { Badge, Stats } from "@/lib/achievements";
 import { badgeProgress, rankFor } from "@/lib/achievements";
 
@@ -140,7 +141,7 @@ export function AchievementsSummary({ stats }: { stats: Stats }) {
   const badges = badgeProgress(stats);
   const earned = badges.filter((b) => b.earned);
   return (
-    <Link href="/badges" className="card mt-3 flex items-center gap-3 p-4 hover:border-forest-300">
+    <Link href="/profile" className="card mt-3 flex items-center gap-3 p-4 hover:border-forest-300">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sun-400 text-forest-900">
         <rank.Icon className="h-5 w-5" aria-hidden />
       </span>
@@ -168,8 +169,10 @@ export function NewBadgesBanner({ badges, newRank = null }: { badges: Badge[]; n
     .filter(Boolean)
     .join(" ");
   return (
+    <>
+    <Confetti />
     <Link
-      href="/badges"
+      href="/profile"
       className="mb-3 flex items-center gap-3 rounded-2xl border-2 border-sun-400 bg-sun-400/15 p-3 hover:bg-sun-400/25"
     >
       <span className="flex -space-x-2">
@@ -188,5 +191,6 @@ export function NewBadgesBanner({ badges, newRank = null }: { badges: Badge[]; n
       </span>
       <ChevronRight className="h-5 w-5 text-bark-500" aria-hidden />
     </Link>
+    </>
   );
 }

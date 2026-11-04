@@ -2,6 +2,7 @@
 
 import { Binoculars, Heart, LoaderCircle } from "lucide-react";
 import Link from "next/link";
+import { Avatar } from "./Avatar";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { loadMoreFeed, toggleReaction } from "@/app/actions/feed";
 import type { FeedCursor, FeedPost } from "@/lib/feed";
@@ -21,15 +22,6 @@ function timeAgo(iso: string) {
     if (seconds >= size) return `${Math.floor(seconds / size)}${label} ago`;
   }
   return "just now";
-}
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
 }
 
 function NiceSpot({ post }: { post: FeedPost }) {
@@ -76,9 +68,7 @@ function Post({ post }: { post: FeedPost }) {
 
   const header = (
     <>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-forest-600 text-sm font-bold text-white">
-        {initials(post.ownerName)}
-      </span>
+      <Avatar userId={post.ownerId} name={post.ownerName} />
       <span className="min-w-0 flex-1">
         <span className="block truncate font-bold">
           {post.ownerName}

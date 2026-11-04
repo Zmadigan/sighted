@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { RankPill, StreakPill } from "@/components/Achievements";
+import { Avatar } from "@/components/Avatar";
 import { Feed } from "@/components/Feed";
 import { FindFriends, FriendRequests } from "@/components/FindFriends";
 import { DisplayName, InviteLink } from "@/components/FriendsClient";
@@ -147,6 +148,7 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
                 >
                   {i + 1}
                 </span>
+                <Avatar userId={p.id} name={p.name} version={p.isMe ? me.updatedAt.getTime() : undefined} className="h-10 w-10" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-bold">
                     {p.name}

@@ -11,7 +11,7 @@ export async function getCurrentUser() {
   if (!session) return null;
   // Read the plan fresh from the database so upgrades apply immediately.
   const [row] = await db
-    .select({ id: user.id, email: user.email, name: user.name, plan: user.plan })
+    .select({ id: user.id, email: user.email, name: user.name, plan: user.plan, updatedAt: user.updatedAt })
     .from(user)
     .where(eq(user.id, session.user.id));
   return row ?? null;

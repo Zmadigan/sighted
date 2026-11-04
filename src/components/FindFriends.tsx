@@ -10,23 +10,7 @@ import {
   sendFriendRequest,
 } from "@/app/actions/friends";
 import type { PersonResult } from "@/lib/friends";
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function Avatar({ name }: { name: string }) {
-  return (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-forest-600 text-sm font-bold text-white">
-      {initials(name)}
-    </span>
-  );
-}
+import { Avatar } from "./Avatar";
 
 /** Search people by display name or exact email, and send friend requests. */
 export function FindFriends() {
@@ -86,7 +70,7 @@ export function FindFriends() {
           )}
           {results.map((p) => (
             <li key={p.id} className="flex items-center gap-3 p-3">
-              <Avatar name={p.name} />
+              <Avatar userId={p.id} name={p.name} />
               <span className="min-w-0 flex-1 truncate font-semibold">{p.name}</span>
               {p.status === "friend" && (
                 <Link href={`/friends/${p.id}`} className="inline-flex items-center gap-1 text-sm font-semibold text-forest-600">
@@ -146,7 +130,7 @@ export function FriendRequests({ requests }: { requests: { id: string; name: str
       <ul className="divide-y divide-sand-200">
         {requests.map((r) => (
           <li key={r.id} className="flex items-center gap-3 py-2">
-            <Avatar name={r.name} />
+            <Avatar userId={r.id} name={r.name} />
             <span className="min-w-0 flex-1 truncate font-semibold">{r.name}</span>
             <button
               type="button"

@@ -1,5 +1,6 @@
-import { Crown, UserRound } from "lucide-react";
+import { Crown } from "lucide-react";
 import Link from "next/link";
+import { Avatar } from "@/components/Avatar";
 import { BottomNav, TopNav } from "@/components/BottomNav";
 import { Logo } from "@/components/Logo";
 import { OfflineSync } from "@/components/OfflineSync";
@@ -29,12 +30,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 <Crown className="h-3.5 w-3.5" aria-hidden /> Upgrade
               </Link>
             )}
-            <Link
-              href="/account"
-              aria-label="Account"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-sand-100 text-bark-700 hover:bg-sand-200"
-            >
-              <UserRound className="h-4 w-4" aria-hidden />
+            <Link href="/profile" aria-label="My profile" className="rounded-full ring-2 ring-transparent hover:ring-forest-300">
+              <Avatar userId={user.id} name={user.name} version={user.updatedAt.getTime()} className="h-8 w-8" />
             </Link>
           </div>
         </div>

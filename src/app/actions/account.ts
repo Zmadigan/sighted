@@ -1,6 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { user } from "@/db/schema";
@@ -33,4 +34,15 @@ export async function deleteAccount(confirmation: string): Promise<{ error: stri
 
   await db.delete(user).where(eq(user.id, me.id));
   redirect("/?deleted=1");
+}
+
+/** Sets (or, with null, removes) the logged-in user's profile picture. */
+export async function updateAvatar(image: string | null): Promise<{ error?: string }> {
+  const me = await requireUser();
+  if (image !== null && (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image) || image.length > 300_000)) {
+    return { error: "That picture couldn't be used. Please try another." };
+  }
+  await db.update(user).set({ image, updatedAt: new Date() }).where(eq(user.id, me.id));
+  revalidatePath("/", "layout");
+  return {};
 }

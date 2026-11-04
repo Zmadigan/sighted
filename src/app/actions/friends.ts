@@ -36,7 +36,7 @@ export async function updateDisplayName(name: string): Promise<{ error?: string;
   const clean = name.replace(/\s+/g, " ").trim();
   if (clean.length < 1 || clean.length > 40) return { error: "Please use 1–40 characters." };
   await db.update(user).set({ name: clean, updatedAt: new Date() }).where(eq(user.id, me.id));
-  revalidatePath("/friends");
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 

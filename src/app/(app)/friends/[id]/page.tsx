@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { removeFriend } from "@/app/actions/friends";
 import { BadgeGrid, BadgeIcon, RankPill, StreakPill } from "@/components/Achievements";
+import { Avatar } from "@/components/Avatar";
 import { CategoryBadge } from "@/components/CategoryIcon";
 import { SightingThumb } from "@/components/SightingThumb";
 import { db } from "@/db";
@@ -46,10 +47,15 @@ export default async function FriendPage({ params, searchParams }: PageProps<"/f
       <Link href="/friends" className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-forest-600">
         <ArrowLeft className="h-4 w-4" aria-hidden /> Friends
       </Link>
-      <h1 className="text-2xl font-extrabold">{friend.name}</h1>
-      <p className="text-sm text-bark-500">
-        {lifeList.length} species · {sightings.length} sightings
-      </p>
+      <div className="flex items-center gap-4">
+        <Avatar userId={id} name={friend.name} className="h-16 w-16" />
+        <div className="min-w-0">
+          <h1 className="truncate text-2xl font-extrabold">{friend.name}</h1>
+          <p className="text-sm text-bark-500">
+            {lifeList.length} species · {sightings.length} sightings
+          </p>
+        </div>
+      </div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <RankPill species={stats.species} />
         <StreakPill weeks={stats.streak} />

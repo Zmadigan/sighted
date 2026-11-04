@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { CreditCard, Crown } from "lucide-react";
+import { ArrowLeft, CreditCard, Crown } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { openBillingPortal } from "@/app/actions/billing";
@@ -10,7 +10,7 @@ import { db } from "@/db";
 import { user } from "@/db/schema";
 import { requireUser } from "@/lib/session";
 
-export const metadata: Metadata = { title: "Account · Sighted" };
+export const metadata: Metadata = { title: "Settings · Sighted" };
 
 export default async function AccountPage() {
   const me = await requireUser();
@@ -19,7 +19,12 @@ export default async function AccountPage() {
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <h1 className="text-2xl font-extrabold">Account</h1>
+      <div>
+        <Link href="/profile" className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-forest-600">
+          <ArrowLeft className="h-4 w-4" aria-hidden /> My profile
+        </Link>
+        <h1 className="text-2xl font-extrabold">Settings</h1>
+      </div>
 
       <section className="card space-y-2 p-4">
         <p className="text-sm text-bark-500">Email</p>
