@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { ChevronRight, Crown, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { CategoryIcon } from "@/components/CategoryIcon";
+import { AchievementsSummary } from "@/components/Achievements";
 import { Goals } from "@/components/Goals";
+import { statsForUser } from "@/lib/achievements";
 import { CATEGORIES, CATEGORY_INFO, categoryInfo, isCategory } from "@/lib/categories";
 import { formatDate } from "@/lib/format";
 import { requireUser } from "@/lib/session";
@@ -81,6 +83,9 @@ export default async function LifeListPage({ searchParams }: PageProps<"/life-li
           <p className="text-sm font-semibold text-bark-500">species in {thisYear}</p>
         </div>
       </div>
+
+      {/* Rank, streak and badges */}
+      <AchievementsSummary stats={await statsForUser(user.id)} />
 
       {/* Pro: goals and year in review */}
       <Goals goals={user.plan === "pro" ? await goalsWithProgress(user.id) : []} isPro={user.plan === "pro"} max={MAX_GOALS} />

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
 import { sighting } from "@/db/schema";
+import { achievementSnapshot } from "@/lib/achievements";
 import { CATEGORIES } from "@/lib/categories";
 import { requireUser } from "@/lib/session";
 
@@ -65,10 +66,18 @@ async function persistSighting(input: SightingInput): Promise<{ id: string } | {
 
 /** Save from the form, then open the saved sighting. */
 export async function saveSighting(input: SightingInput): Promise<{ error: string }> {
+  const user = await requireUser();
+  const before = await achievementSnapshot(user.id);
   const result = await persistSighting(input);
   if ("error" in result) return result;
   revalidatePath("/", "layout");
-  redirect(`/journal/${result.id}`);
+  // Celebrate any badges or rank-up this sighting just unlocked.
+  const after = await achievementSnapshot(user.id);
+  const params = new URLSearchParams();
+  const earned = after.badges.filter((id) => !before.badges.includes(id));
+  if (earned.length) params.set("badges", earned.join(","));
+  if (after.rank.level > before.rank.level) params.set("rankup", "1");
+  redirect(`/journal/${result.id}${params.size ? `?${params}` : ""}`);
 }
 
 /** Upload a sighting that was saved on the phone while offline (stays on the current page). */

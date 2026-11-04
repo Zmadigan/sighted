@@ -2,9 +2,11 @@ import { Binoculars, Camera, ChevronRight, Newspaper, Trophy, UserPlus, Users } 
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
+import { RankPill, StreakPill } from "@/components/Achievements";
 import { Feed } from "@/components/Feed";
 import { FindFriends, FriendRequests } from "@/components/FindFriends";
 import { DisplayName, InviteLink } from "@/components/FriendsClient";
+import { statsFor } from "@/lib/achievements";
 import { foundThisWeek } from "@/lib/bird-of-week";
 import { getFeed } from "@/lib/feed";
 import { getInviteCode, incomingRequests, leaderboard, listFriends, type Period } from "@/lib/friends";
@@ -39,10 +41,11 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
   ]);
   const people = [{ id: me.id, name: me.name, isMe: true }, ...friends.map((f) => ({ ...f, isMe: false }))];
   const ids = people.map((p) => p.id);
-  const [counts, foundBird, feed] = await Promise.all([
+  const [counts, foundBird, feed, achievements] = await Promise.all([
     leaderboard(ids, period),
     foundThisWeek(ids),
     showLeaderboard || showAdd ? null : getFeed(me.id, null),
+    showLeaderboard ? statsFor(ids) : null,
   ]);
   const ranked = people
     .map((p) => ({ ...p, species: counts.get(p.id)?.species ?? 0, sightings: counts.get(p.id)?.sightings ?? 0 }))
@@ -144,15 +147,23 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
                 >
                   {i + 1}
                 </span>
-                <span className="min-w-0 flex-1 truncate font-bold">
-                  {p.name}
-                  {p.isMe && <span className="ml-1 font-normal text-bark-500">(you)</span>}
-                  {foundBird.has(p.id) && (
-                    <span
-                      className="ml-1.5 inline-flex translate-y-0.5 items-center rounded-full bg-sun-400 p-1 text-forest-900"
-                      title="Found this week's Bird of the Week"
-                    >
-                      <Binoculars className="h-3 w-3" aria-label="Found this week's Bird of the Week" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-bold">
+                    {p.name}
+                    {p.isMe && <span className="ml-1 font-normal text-bark-500">(you)</span>}
+                    {foundBird.has(p.id) && (
+                      <span
+                        className="ml-1.5 inline-flex translate-y-0.5 items-center rounded-full bg-sun-400 p-1 text-forest-900"
+                        title="Found this week's Bird of the Week"
+                      >
+                        <Binoculars className="h-3 w-3" aria-label="Found this week's Bird of the Week" />
+                      </span>
+                    )}
+                  </span>
+                  {achievements?.get(p.id) && (
+                    <span className="mt-0.5 flex flex-wrap gap-1">
+                      <RankPill species={achievements.get(p.id)!.species} />
+                      <StreakPill weeks={achievements.get(p.id)!.streak} />
                     </span>
                   )}
                 </span>

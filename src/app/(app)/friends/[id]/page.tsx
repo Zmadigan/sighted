@@ -3,10 +3,12 @@ import { ArrowLeft, CalendarDays, UserMinus } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { removeFriend } from "@/app/actions/friends";
+import { BadgeIcon, RankPill, StreakPill } from "@/components/Achievements";
 import { CategoryBadge } from "@/components/CategoryIcon";
 import { SightingThumb } from "@/components/SightingThumb";
 import { db } from "@/db";
 import { user } from "@/db/schema";
+import { badgeProgress, statsForUser } from "@/lib/achievements";
 import { formatDate } from "@/lib/format";
 import { areFriends, listFriendSightings } from "@/lib/friends";
 import { requireUser } from "@/lib/session";
@@ -20,10 +22,12 @@ export default async function FriendPage({ params, searchParams }: PageProps<"/f
   const { tab } = await searchParams;
   if (!(await areFriends(me.id, id))) notFound();
 
-  const [[friend], sightings] = await Promise.all([
+  const [[friend], sightings, stats] = await Promise.all([
     db.select({ name: user.name }).from(user).where(eq(user.id, id)),
     listFriendSightings(id),
+    statsForUser(id),
   ]);
+  const earnedBadges = badgeProgress(stats).filter((b) => b.earned);
   if (!friend) notFound();
 
   // Life list: each species once, with the first date they saw it.
@@ -45,6 +49,19 @@ export default async function FriendPage({ params, searchParams }: PageProps<"/f
       <p className="text-sm text-bark-500">
         {lifeList.length} species · {sightings.length} sightings
       </p>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <RankPill species={stats.species} />
+        <StreakPill weeks={stats.streak} />
+      </div>
+      {earnedBadges.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Badges">
+          {earnedBadges.map((b) => (
+            <li key={b.id} title={`${b.name}: ${b.description}`}>
+              <BadgeIcon badge={b} earned size="sm" />
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="my-4 flex gap-1 rounded-full bg-sand-100 p-1">
         {[

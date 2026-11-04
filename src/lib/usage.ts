@@ -4,8 +4,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { networkUsage, usage } from "@/db/schema";
 
-export const FREE_MONTHLY_LIMIT = 5;
-/** Free IDs shared by all free accounts on one internet connection per month (about 6 accounts' worth). */
+export const FREE_MONTHLY_LIMIT = 3;
+/** Free IDs shared by all free accounts on one internet connection per month (about 10 accounts' worth). */
 export const FREE_NETWORK_MONTHLY_LIMIT = 30;
 
 /** Calendar month key in UTC, e.g. "2026-11". */

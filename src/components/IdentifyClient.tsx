@@ -230,5 +230,5 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
 }
 
 function limitMessage() {
-  return "You've used all 5 free identifications this month. Upgrade to Sighted Pro for unlimited IDs, or wait until your free IDs reset on the 1st. You can still add sightings manually.";
+  return "You've used all 3 free identifications this month. Upgrade to Sighted Pro for unlimited IDs, or wait until your free IDs reset on the 1st. You can still add sightings manually.";
 }

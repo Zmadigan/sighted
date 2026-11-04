@@ -77,7 +77,7 @@ Without a key, local emails are printed in the dev server's terminal instead.
 - `src/app/(auth)/`: sign up / log in
 - `src/app/(app)/`: logged-in pages (identify, journal, life list, map)
 - `src/lib/identify.ts`: Claude API call that identifies the animal
-- `src/lib/usage.ts`: free-plan monthly limit (5 IDs)
+- `src/lib/usage.ts`: free-plan monthly limit (3 IDs)
 - `src/lib/stripe.ts`, `src/app/actions/billing.ts`, `src/app/api/stripe/webhook/route.ts`: Pro subscription
 - `src/app/actions/sightings.ts`: save / edit / delete sightings
 - `src/app/(app)/friends/`, `src/app/invite/`, `src/lib/friends.ts`: friends, invite links and the leaderboard

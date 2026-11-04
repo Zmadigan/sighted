@@ -1,16 +1,20 @@
 import { ArrowLeft, CalendarDays, Lock, Pencil, Sprout } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { NewBadgesBanner } from "@/components/Achievements";
 import { CategoryBadge } from "@/components/CategoryIcon";
 import { DeleteSightingButton } from "@/components/DeleteSightingButton";
 import { SightingsMap } from "@/components/map";
 import { SightingThumb } from "@/components/SightingThumb";
+import { badgesById, rankFor, statsForUser } from "@/lib/achievements";
 import { formatDate } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { getSighting, photoUrl } from "@/lib/sightings";
 
-export default async function SightingPage({ params }: PageProps<"/journal/[id]">) {
+export default async function SightingPage({ params, searchParams }: PageProps<"/journal/[id]">) {
   const { id } = await params;
+  const { badges, rankup } = await searchParams;
+  const newBadges = typeof badges === "string" ? badgesById(badges.split(",")) : [];
   const user = await requireUser();
   const s = await getSighting(user.id, id);
   if (!s) notFound();
@@ -20,6 +24,10 @@ export default async function SightingPage({ params }: PageProps<"/journal/[id]"
       <Link href="/journal" className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-forest-600">
         <ArrowLeft className="h-4 w-4" aria-hidden /> Journal
       </Link>
+      <NewBadgesBanner
+        badges={newBadges}
+        newRank={rankup ? rankFor((await statsForUser(user.id)).species).name : null}
+      />
       <div className="card overflow-hidden">
         <SightingThumb
           src={s.hasPhoto ? photoUrl(s) : null}

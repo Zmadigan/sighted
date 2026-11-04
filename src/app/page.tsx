@@ -115,7 +115,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 <h3 className="text-xl font-bold">Free</h3>
                 <p className="mt-1 text-3xl font-extrabold">$0</p>
                 <ul className="mt-4 space-y-2 text-forest-800/90">
-                  <Feature>5 AI identifications per month</Feature>
+                  <Feature>3 AI identifications per month</Feature>
                   <Feature>Unlimited journal entries</Feature>
                   <Feature>Life list and map</Feature>
                 </ul>
