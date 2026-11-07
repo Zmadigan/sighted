@@ -33,7 +33,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <Logo />
         <nav className="flex items-center gap-2">
           {user ? (
-            <Link href="/identify" className="btn btn-primary py-2">
+            <Link href="/friends" className="btn btn-primary py-2">
               Open app
             </Link>
           ) : (

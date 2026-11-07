@@ -5,6 +5,7 @@ import Link from "next/link";
 import { RankPill, StreakPill } from "@/components/Achievements";
 import { Avatar } from "@/components/Avatar";
 import { Feed } from "@/components/Feed";
+import { GetStarted } from "@/components/GetStarted";
 import { FindFriends, FriendRequests } from "@/components/FindFriends";
 import { DisplayName, InviteLink } from "@/components/FriendsClient";
 import { statsFor } from "@/lib/achievements";
@@ -68,6 +69,8 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
       </div>
 
       <FriendRequests requests={requests} />
+
+      {!showLeaderboard && !showAdd && <GetStarted userId={me.id} />}
 
       {typeof added === "string" && (
         <p className="rounded-lg bg-forest-100 p-3 text-sm font-semibold text-forest-800">

@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-20 border-b border-sand-200 bg-sand-50/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <Logo href="/journal" />
+          <Logo href="/friends" />
           <TopNav friendRequests={friendRequests} />
           <div className="flex items-center gap-3">
             {user.plan === "pro" ? (

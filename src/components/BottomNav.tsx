@@ -5,11 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
+  { href: "/friends", label: "Friends", Icon: Users },
   { href: "/identify", label: "Identify", Icon: Camera },
   { href: "/journal", label: "Journal", Icon: BookOpen },
   { href: "/life-list", label: "Life List", Icon: ListChecks },
   { href: "/map", label: "Map", Icon: Map },
-  { href: "/friends", label: "Friends", Icon: Users },
 ];
 
 /** Small red count, e.g. new friend requests on the Friends tab. */

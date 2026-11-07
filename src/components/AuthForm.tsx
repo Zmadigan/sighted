@@ -13,7 +13,7 @@ export function AuthForm({ mode, next, notice }: { mode: "signup" | "login"; nex
   const [loading, setLoading] = useState(false);
 
   // Only allow redirects back into our own app.
-  const destination = next && next.startsWith("/") && !next.startsWith("//") ? next : "/identify";
+  const destination = next && next.startsWith("/") && !next.startsWith("//") ? next : "/friends";
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

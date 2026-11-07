@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Sighted: your wildlife journal",
     short_name: "Sighted",
     description: "Snap a photo of any animal. Get an instant ID. Build your lifelong wildlife journal.",
-    start_url: "/identify",
+    start_url: "/friends",
     scope: "/",
     display: "standalone",
     orientation: "portrait",
