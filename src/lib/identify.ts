@@ -14,7 +14,17 @@ const IdentificationSchema = z.object({
   category: z.enum(CATEGORIES),
   confidence: z.enum(["high", "medium", "low"]),
   fun_facts: z.array(z.string()),
+  range_note: z.string(),
 });
+
+/** Where and when the photo was taken (approximate), when known. */
+export type PhotoContext = {
+  date?: string;
+  lat?: number;
+  lng?: number;
+  /** "photo" = the photo's own GPS data; "device" = where the phone is now (the photo may be older). */
+  locationSource?: "photo" | "device";
+};
 
 export type Identification =
   | {
@@ -24,6 +34,8 @@ export type Identification =
       category: (typeof CATEGORIES)[number];
       confidence: "high" | "medium" | "low";
       funFacts: string[];
+      /** e.g. "Common year-round in Ohio." (empty when the location wasn't known) */
+      rangeNote: string;
     }
   | { foundAnimal: false; message: string };
 
@@ -38,13 +50,36 @@ Fill in the fields like this:
 - category: one of bird, mammal, reptile_amphibian, insect, fish, other. Use "other" for spiders, crustaceans, mollusks, worms and anything else.
 - confidence: high, medium or low — how sure you are of the exact identification.
 - fun_facts: 2 or 3 short, surprising, accurate facts about this animal, one sentence each, friendly in tone.
-When found_animal is false, use empty strings, category "other", confidence "low" and an empty fun_facts list.`;
+- range_note: only when a location is given, one short friendly sentence on whether this animal is expected there at that time of year, naming the region in plain words (e.g. "Common year-round in central Ohio." or "A winter visitor here, so November is a great time to spot one."). Never repeat the coordinates. Empty string when no location is given.
+When found_animal is false, use empty strings, category "other", confidence "low" and an empty fun_facts list.
+
+Using location and date:
+The user's message may say roughly where and when the photo was taken. Use it to tell apart species that look alike: prefer the species whose range and season match (for example a Downy vs. Hairy Woodpecker, an Eastern vs. Western Meadowlark, or which crow, gull, sparrow, chipmunk or squirrel lives there), and think about migration and breeding seasons for that month and hemisphere. The photo is still the main evidence: if it clearly shows a species that's unusual for the place or season, name it anyway (it may be a rare visitor, a zoo or pet animal, or an old photo) and set confidence to reflect any doubt. A location described as "the phone's current location" may not be where an older photo was taken, so give it less weight.`;
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
 
 export class IdentifyError extends Error {}
 
-export async function identifyAnimal(dataUrl: string): Promise<Identification> {
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/** Plain-words description of where/when, for the AI. */
+function describeContext(context: PhotoContext) {
+  const lines: string[] = [];
+  if (context.lat != null && context.lng != null) {
+    const source =
+      context.locationSource === "photo"
+        ? "from the photo's GPS data"
+        : "the phone's current location; the photo may have been taken somewhere else";
+    lines.push(`Location: about ${context.lat.toFixed(2)}, ${context.lng.toFixed(2)} (latitude, longitude; ${source}).`);
+  }
+  if (context.date) {
+    const month = MONTHS[Number(context.date.slice(5, 7)) - 1];
+    lines.push(`Date: ${context.date}${month ? ` (${month})` : ""}.`);
+  }
+  return lines.join("\n");
+}
+
+export async function identifyAnimal(dataUrl: string, context: PhotoContext = {}): Promise<Identification> {
   const match = /^data:(image\/[a-z]+);base64,(.+)$/.exec(dataUrl);
   const mediaType = match?.[1] as (typeof ALLOWED_TYPES)[number] | undefined;
   if (!match || !mediaType || !ALLOWED_TYPES.includes(mediaType)) {
@@ -65,7 +100,7 @@ export async function identifyAnimal(dataUrl: string): Promise<Identification> {
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: mediaType, data: match[2] } },
-          { type: "text", text: "What animal is this?" },
+          { type: "text", text: ["What animal is this?", describeContext(context)].filter(Boolean).join("\n\n") },
         ],
       },
     ],
@@ -97,5 +132,6 @@ export async function identifyAnimal(dataUrl: string): Promise<Identification> {
     category: result.category,
     confidence: result.confidence,
     funFacts: result.fun_facts.filter(Boolean).slice(0, 3),
+    rangeNote: context.lat != null ? result.range_note.trim() : "",
   };
 }

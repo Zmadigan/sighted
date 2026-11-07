@@ -1,13 +1,46 @@
 "use client";
 
-import { Camera, CloudRain, Crown, PartyPopper, ImageUp, LoaderCircle, MoonStar, ScanSearch, SearchX, Sprout } from "lucide-react";
+import { Camera, CloudRain, Crown, PartyPopper, ImageUp, LoaderCircle, MapPin, MoonStar, ScanSearch, SearchX, Sprout } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { Identification } from "@/lib/identify";
-import { compressImage, readPhotoInfo, type PhotoInfo } from "@/lib/image";
+import { compressImage, readPhotoInfo, todayLocal, type PhotoInfo } from "@/lib/image";
 import { BIRD_FOUND_EVENT } from "./BirdOfWeekCard";
 import { CategoryBadge } from "./CategoryIcon";
 import { SightingForm } from "./SightingForm";
+
+/** Where the phone is now, only if the user already allowed location (never shows a permission prompt). */
+async function knownPosition() {
+  try {
+    if (!("geolocation" in navigator) || !navigator.permissions) return undefined;
+    const permission = await navigator.permissions.query({ name: "geolocation" });
+    if (permission.state !== "granted") return undefined;
+    return await new Promise<{ lat: number; lng: number } | undefined>((resolve) =>
+      navigator.geolocation.getCurrentPosition(
+        (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+        () => resolve(undefined),
+        { timeout: 4000, maximumAge: 60 * 60 * 1000 },
+      ),
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Where and when the photo was taken, to help the AI tell look-alike species apart.
+ * Uses the photo's own GPS and date first; otherwise the phone's location and today's date.
+ * Rounded to about 1 km, which is plenty for knowing what lives there.
+ */
+async function photoContext(info: PhotoInfo) {
+  const fromPhoto = info.lat != null && info.lng != null;
+  const where = fromPhoto ? { lat: info.lat!, lng: info.lng! } : await knownPosition();
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return {
+    date: info.date ?? todayLocal(),
+    ...(where ? { lat: round(where.lat), lng: round(where.lng), locationSource: fromPhoto ? "photo" : "device" } : {}),
+  };
+}
 
 type State =
   | { step: "pick" }
@@ -40,9 +73,11 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
 
     setState({ step: "loading" });
     let image: string;
+    let info: PhotoInfo;
     try {
       // Read when/where it was taken first: resizing the photo removes that information.
-      setPhotoInfo(await readPhotoInfo(file));
+      info = await readPhotoInfo(file);
+      setPhotoInfo(info);
       image = await compressImage(file);
     } catch {
       setState({ step: "error", message: "We couldn't read that photo. Please try another one." });
@@ -54,7 +89,7 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
       const res = await fetch("/api/identify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image }),
+        body: JSON.stringify({ image, context: await photoContext(info) }),
       });
       const data = await res.json();
       if (data.error === "limit") return setState({ step: "limit", message: data.message });
@@ -141,6 +176,12 @@ export function IdentifyClient({ initialRemaining }: { initialRemaining: number 
             </div>
             <h2 className="mt-2 text-3xl font-extrabold">{result.commonName}</h2>
             {result.scientificName && <p className="italic text-bark-500">{result.scientificName}</p>}
+            {result.rangeNote && (
+              <p className="mt-2 flex gap-1.5 text-sm text-bark-700">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-forest-600" aria-hidden />
+                <span>{result.rangeNote}</span>
+              </p>
+            )}
           </div>
           {result.funFacts.length > 0 && (
             <div className="rounded-xl bg-forest-50 p-4">

@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Privacy Policy · Sighted" };
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy Policy" updated="November 3, 2026">
+    <LegalPage title="Privacy Policy" updated="November 6, 2026">
       <p>
         Sighted (&ldquo;we&rdquo;) is a wildlife journal. This policy explains what we collect, why, and the choices
         you have. We don&apos;t sell your personal information.
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
       <h2>How we use it</h2>
       <ul>
         <li>To run your journal, life list, map, goals and year in review.</li>
-        <li>To identify animals: photos you choose to identify are sent to our AI provider (Anthropic&apos;s Claude) to get a result.</li>
+        <li>To identify animals: photos you choose to identify are sent to our AI provider (Anthropic&apos;s Claude) to get a result, along with the date and an approximate location (rounded to about 1 km) when known, so it can tell apart species that look alike. The location comes from the photo itself, or from your device if you&apos;ve already allowed Sighted to use your location.</li>
         <li>To manage subscriptions, send password-reset emails, and keep the service secure.</li>
       </ul>
 
@@ -48,7 +48,7 @@ export default function PrivacyPage() {
 
       <h2>Services we rely on</h2>
       <ul>
-        <li>Vercel (hosting), Neon (database), Anthropic (AI identification), Stripe (payments), Resend (email).</li>
+        <li>Vercel (hosting and photo storage), Neon (database), Anthropic (AI identification), Stripe (payments), Resend (email).</li>
         <li>Maps use OpenStreetMap tiles, which are loaded from OpenStreetMap&apos;s servers.</li>
       </ul>
       <p>These providers only process data as needed to provide their service to us.</p>

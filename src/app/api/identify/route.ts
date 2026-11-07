@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { checkBirdOfWeekFound } from "@/lib/bird-of-week";
-import { identifyAnimal, IdentifyError } from "@/lib/identify";
+import { identifyAnimal, IdentifyError, type PhotoContext } from "@/lib/identify";
 import { getCurrentUser } from "@/lib/session";
 import {
   FREE_MONTHLY_LIMIT,
@@ -15,6 +15,21 @@ import {
 
 // Give Claude time to look at the photo (Vercel's default can be shorter).
 export const maxDuration = 60;
+
+/** Keeps only valid, approximate location/date hints from the browser. */
+function readContext(raw: unknown): PhotoContext {
+  if (!raw || typeof raw !== "object") return {};
+  const c = raw as Record<string, unknown>;
+  const context: PhotoContext = {};
+  if (typeof c.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(c.date)) context.date = c.date;
+  const lat = c.lat, lng = c.lng;
+  if (typeof lat === "number" && typeof lng === "number" && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+    context.lat = Math.round(lat * 100) / 100;
+    context.lng = Math.round(lng * 100) / 100;
+    context.locationSource = c.locationSource === "photo" ? "photo" : "device";
+  }
+  return context;
+}
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -44,7 +59,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const body = (await request.json().catch(() => null)) as { image?: unknown } | null;
+  const body = (await request.json().catch(() => null)) as { image?: unknown; context?: unknown } | null;
   if (!body || typeof body.image !== "string") {
     return NextResponse.json({ error: "No photo was received." }, { status: 400 });
   }
@@ -53,7 +68,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await identifyAnimal(body.image);
+    const result = await identifyAnimal(body.image, readContext(body.context));
     await recordIdentification(user.id);
     if (ipHash) await recordNetworkIdentification(ipHash);
     // Photo IDs are the only way to complete the Bird of the Week challenge.
