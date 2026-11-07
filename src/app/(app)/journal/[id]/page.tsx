@@ -5,8 +5,11 @@ import { NewBadgesBanner } from "@/components/Achievements";
 import { CategoryBadge } from "@/components/CategoryIcon";
 import { DeleteSightingButton } from "@/components/DeleteSightingButton";
 import { SightingsMap } from "@/components/map";
+import { Comments } from "@/components/Comments";
+import { ZoomablePhoto } from "@/components/PhotoViewer";
 import { SightingThumb } from "@/components/SightingThumb";
 import { badgesById, rankFor, statsForUser } from "@/lib/achievements";
+import { commentsFor } from "@/lib/comments";
 import { formatDate } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { getSighting, photoUrl } from "@/lib/sightings";
@@ -29,12 +32,11 @@ export default async function SightingPage({ params, searchParams }: PageProps<"
         newRank={rankup ? rankFor((await statsForUser(user.id)).species).name : null}
       />
       <div className="card overflow-hidden">
-        <SightingThumb
-          src={s.hasPhoto ? photoUrl(s) : null}
-          category={s.category}
-          alt={s.commonName}
-          className="max-h-96 min-h-40 w-full"
-        />
+        {s.hasPhoto ? (
+          <ZoomablePhoto src={photoUrl(s)} alt={s.commonName} className="max-h-96 min-h-40 w-full" />
+        ) : (
+          <SightingThumb src={null} category={s.category} alt={s.commonName} className="max-h-96 min-h-40 w-full" />
+        )}
         <div className="space-y-4 p-5">
           <div>
             <span className="flex flex-wrap items-center gap-2">
@@ -102,6 +104,18 @@ export default async function SightingPage({ params, searchParams }: PageProps<"
           </div>
         </div>
       </div>
+
+      <section className="card mt-4 p-4">
+        <h2 className="mb-3 font-bold">Comments</h2>
+        {s.isPrivate && (
+          <p className="mb-2 text-sm text-bark-500">This sighting is private, so only you can see it and comment.</p>
+        )}
+        <Comments
+          sightingId={s.id}
+          meId={user.id}
+          initial={(await commentsFor(user.id, [{ id: s.id, ownerId: user.id }])).get(s.id) ?? []}
+        />
+      </section>
     </article>
   );
 }

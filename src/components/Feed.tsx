@@ -1,28 +1,15 @@
 "use client";
 
-import { Binoculars, Heart, LoaderCircle } from "lucide-react";
+import { Binoculars, Heart, LoaderCircle, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "./Avatar";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { loadMoreFeed, toggleReaction } from "@/app/actions/feed";
 import type { FeedCursor, FeedPost } from "@/lib/feed";
-import { formatDate } from "@/lib/format";
+import { formatDate, timeAgo } from "@/lib/format";
 import { CategoryBadge } from "./CategoryIcon";
-
-function timeAgo(iso: string) {
-  const seconds = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const units: [number, string][] = [
-    [60 * 60 * 24 * 7, "w"],
-    [60 * 60 * 24, "d"],
-    [60 * 60, "h"],
-    [60, "m"],
-  ];
-  for (const [size, label] of units) {
-    if (seconds >= size) return `${Math.floor(seconds / size)}${label} ago`;
-  }
-  return "just now";
-}
+import { Comments } from "./Comments";
+import { PhotoViewer } from "./PhotoViewer";
 
 function NiceSpot({ post }: { post: FeedPost }) {
   const [state, setState] = useState({ reacted: post.reactedByMe, count: post.reactions });
@@ -53,7 +40,10 @@ function NiceSpot({ post }: { post: FeedPost }) {
   );
 }
 
-function Post({ post }: { post: FeedPost }) {
+export function Post({ post, meId, onOpenPhoto }: { post: FeedPost; meId: string; onOpenPhoto?: () => void }) {
+  const commentInput = useRef<HTMLTextAreaElement>(null);
+  const [commentCount, setCommentCount] = useState(post.comments.length);
+  const [viewing, setViewing] = useState(false);
   // Times are relative ("2h ago"), so only show them once the browser has the current time.
   const [ago, setAgo] = useState<string | null>(null);
   useEffect(() => {
@@ -88,15 +78,30 @@ function Post({ post }: { post: FeedPost }) {
           {header}
         </Link>
       )}
-      <Link href={post.isMine ? `/journal/${post.id}` : `/friends/${post.ownerId}`} className="relative block">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={post.photoUrl} alt={post.commonName} loading="lazy" className="max-h-[28rem] w-full bg-sand-100 object-cover" />
-        {post.birdOfWeek && (
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-sun-400 px-2.5 py-1 text-xs font-bold text-forest-900 shadow">
-            <Binoculars className="h-3.5 w-3.5" aria-hidden /> Bird of the Week!
-          </span>
-        )}
-      </Link>
+      {post.photoUrl && (
+        <button
+          type="button"
+          onClick={() => (onOpenPhoto ? onOpenPhoto() : setViewing(true))}
+          className="relative block w-full cursor-zoom-in"
+          aria-label={`View ${post.commonName} photo full screen`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={post.photoUrl} alt={post.commonName} loading="lazy" className="max-h-[28rem] w-full bg-sand-100 object-cover" />
+          {post.birdOfWeek && (
+            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-sun-400 px-2.5 py-1 text-xs font-bold text-forest-900 shadow">
+              <Binoculars className="h-3.5 w-3.5" aria-hidden /> Bird of the Week!
+            </span>
+          )}
+        </button>
+      )}
+      {viewing && post.photoUrl && (
+        <PhotoViewer
+          photos={[{ src: post.photoUrl, alt: post.commonName, caption: post.commonName }]}
+          index={0}
+          onIndexChange={() => {}}
+          onClose={() => setViewing(false)}
+        />
+      )}
       <div className="space-y-2 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -106,9 +111,23 @@ function Post({ post }: { post: FeedPost }) {
           <CategoryBadge category={post.category} />
         </div>
         {post.notes && <p className="whitespace-pre-wrap text-forest-800/90">{post.notes}</p>}
-        <div className="flex items-center justify-between pt-1">
-          <NiceSpot post={post} />
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <div className="flex items-center gap-2">
+            <NiceSpot post={post} />
+            <button
+              type="button"
+              onClick={() => commentInput.current?.focus()}
+              className="inline-flex items-center gap-1.5 rounded-full bg-sand-100 px-3 py-1.5 text-sm font-semibold text-bark-700 hover:bg-sand-200"
+              aria-label="Comment"
+            >
+              <MessageCircle className="h-4 w-4" aria-hidden />
+              {commentCount > 0 && <span className="font-bold">{commentCount}</span>}
+            </button>
+          </div>
           <span className="text-xs text-bark-500">Seen {formatDate(post.observedOn)}</span>
+        </div>
+        <div className="border-t border-sand-200 pt-3">
+          <Comments ref={commentInput} sightingId={post.id} initial={post.comments} meId={meId} collapsed onCountChange={setCommentCount} />
         </div>
       </div>
     </article>
@@ -116,7 +135,8 @@ function Post({ post }: { post: FeedPost }) {
 }
 
 /** Friends' photo sightings, newest first; loads 10 more as you near the bottom. */
-export function Feed({ initial, initialCursor }: { initial: FeedPost[]; initialCursor: FeedCursor }) {
+export function Feed({ initial, initialCursor, meId }: { initial: FeedPost[]; initialCursor: FeedCursor; meId: string }) {
+  const [viewer, setViewer] = useState<number | null>(null);
   const [posts, setPosts] = useState(initial);
   const [cursor, setCursor] = useState(initialCursor);
   const [loading, setLoading] = useState(false);
@@ -140,11 +160,26 @@ export function Feed({ initial, initialCursor }: { initial: FeedPost[]; initialC
     return () => observer.disconnect();
   }, [cursor, loading]);
 
+  const photoPosts = posts.filter((p) => p.photoUrl);
+
   return (
     <div className="space-y-4">
       {posts.map((post) => (
-        <Post key={post.id} post={post} />
+        <Post
+          key={post.id}
+          post={post}
+          meId={meId}
+          onOpenPhoto={() => setViewer(photoPosts.findIndex((p) => p.id === post.id))}
+        />
       ))}
+      {viewer !== null && photoPosts[viewer] && (
+        <PhotoViewer
+          photos={photoPosts.map((p) => ({ src: p.photoUrl!, alt: p.commonName, caption: `${p.commonName} · ${p.ownerName}` }))}
+          index={viewer}
+          onIndexChange={setViewer}
+          onClose={() => setViewer(null)}
+        />
+      )}
       <div ref={sentinel} />
       {loading && (
         <p className="flex items-center justify-center gap-2 py-4 text-sm text-bark-500">

@@ -2,6 +2,7 @@ import "server-only";
 import { and, desc, eq, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { birdChallenge, friendship, reaction, sighting, user, weeklyBird } from "@/db/schema";
+import { commentsFor, type CommentView } from "./comments";
 
 export const FEED_PAGE_SIZE = 10;
 
@@ -16,10 +17,12 @@ export type FeedPost = {
   observedOn: string;
   notes: string | null;
   postedAt: string; // ISO time it was logged
-  photoUrl: string;
+  /** null for sightings without a photo (only on a single post's page; the feed shows photo posts only) */
+  photoUrl: string | null;
   reactions: number;
   reactedByMe: boolean;
   birdOfWeek: boolean;
+  comments: CommentView[];
 };
 
 /** Cursor = the last post's "postedAt|id", so the next page continues right after it. */
@@ -67,20 +70,7 @@ export async function getFeed(meId: string, cursor: FeedCursor): Promise<{ posts
   }
 
   const rows = await db
-    .select({
-      id: sighting.id,
-      ownerId: sighting.userId,
-      ownerName: user.name,
-      commonName: sighting.commonName,
-      scientificName: sighting.scientificName,
-      category: sighting.category,
-      observedOn: sighting.observedOn,
-      notes: sighting.notes,
-      createdAt: sighting.createdAt,
-      updatedAt: sighting.updatedAt,
-      reactions: sql<number>`(select count(*)::int from ${reaction} where ${reaction.sightingId} = ${sighting.id})`,
-      reactedByMe: sql<boolean>`exists (select 1 from ${reaction} where ${reaction.sightingId} = ${sighting.id} and ${reaction.userId} = ${meId})`,
-    })
+    .select(postColumns(meId))
     .from(sighting)
     .innerJoin(user, eq(user.id, sighting.userId))
     .where(
@@ -95,6 +85,69 @@ export async function getFeed(meId: string, cursor: FeedCursor): Promise<{ posts
     .limit(FEED_PAGE_SIZE + 1);
 
   const page = rows.slice(0, FEED_PAGE_SIZE);
+  const posts = await toPosts(meId, page);
+  const last = page[page.length - 1];
+  return {
+    posts,
+    next: rows.length > FEED_PAGE_SIZE && last ? `${last.createdAt.toISOString()}|${last.id}` : null,
+  };
+}
+
+/** One post (yours, or a friend's that isn't private), e.g. when opened from a notification. */
+export async function getPost(meId: string, sightingId: string): Promise<FeedPost | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(sightingId)) return null;
+  const [row] = await db
+    .select({ ...postColumns(meId), isPrivate: sighting.isPrivate })
+    .from(sighting)
+    .innerJoin(user, eq(user.id, sighting.userId))
+    .where(eq(sighting.id, sightingId));
+  if (!row) return null;
+  if (row.ownerId !== meId) {
+    if (row.isPrivate) return null;
+    const [friend] = await db
+      .select({ id: friendship.friendId })
+      .from(friendship)
+      .where(and(eq(friendship.userId, meId), eq(friendship.friendId, row.ownerId)));
+    if (!friend) return null;
+  }
+  return (await toPosts(meId, [row]))[0];
+}
+
+function postColumns(meId: string) {
+  return {
+      id: sighting.id,
+      ownerId: sighting.userId,
+      ownerName: user.name,
+      commonName: sighting.commonName,
+      scientificName: sighting.scientificName,
+      category: sighting.category,
+      observedOn: sighting.observedOn,
+      notes: sighting.notes,
+      createdAt: sighting.createdAt,
+      updatedAt: sighting.updatedAt,
+      reactions: sql<number>`(select count(*)::int from ${reaction} where ${reaction.sightingId} = ${sighting.id})`,
+      reactedByMe: sql<boolean>`exists (select 1 from ${reaction} where ${reaction.sightingId} = ${sighting.id} and ${reaction.userId} = ${meId})`,
+      hasPhoto: sql<boolean>`${sighting.photo} is not null`,
+  };
+}
+
+type PostRow = {
+  id: string;
+  ownerId: string;
+  ownerName: string;
+  commonName: string;
+  scientificName: string | null;
+  category: string;
+  observedOn: string;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  reactions: number;
+  reactedByMe: boolean;
+  hasPhoto: boolean;
+};
+
+async function toPosts(meId: string, page: PostRow[]): Promise<FeedPost[]> {
 
   // Tag posts that completed their owner's Bird of the Week that week.
   const found = page.length
@@ -113,7 +166,9 @@ export async function getFeed(meId: string, cursor: FeedCursor): Promise<{ posts
         .where(and(inArray(birdChallenge.userId, [...new Set(page.map((p) => p.ownerId))]), isNotNull(birdChallenge.foundAt)))
     : [];
 
-  const posts = page.map((r) => ({
+  const comments = await commentsFor(meId, page);
+
+  return page.map((r) => ({
     id: r.id,
     ownerId: r.ownerId,
     ownerName: r.ownerName,
@@ -124,7 +179,7 @@ export async function getFeed(meId: string, cursor: FeedCursor): Promise<{ posts
     observedOn: r.observedOn,
     notes: r.notes ? r.notes.replace(/\n*Location:[^]*$/, "").trim() || null : null,
     postedAt: r.createdAt.toISOString(),
-    photoUrl: `/api/photos/${r.id}?v=${r.updatedAt.getTime()}`,
+    photoUrl: r.hasPhoto ? `/api/photos/${r.id}?v=${r.updatedAt.getTime()}` : null,
     reactions: r.reactions,
     reactedByMe: r.reactedByMe,
     birdOfWeek: found.some(
@@ -133,11 +188,6 @@ export async function getFeed(meId: string, cursor: FeedCursor): Promise<{ posts
         f.week === weekOf(r.createdAt) &&
         sameSpecies({ s: r.scientificName, c: r.commonName }, { s: f.scientificName, c: f.commonName }),
     ),
+    comments: comments.get(r.id) ?? [],
   }));
-
-  const last = page[page.length - 1];
-  return {
-    posts,
-    next: rows.length > FEED_PAGE_SIZE && last ? `${last.createdAt.toISOString()}|${last.id}` : null,
-  };
 }

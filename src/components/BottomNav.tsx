@@ -12,6 +12,9 @@ const tabs = [
   { href: "/map", label: "Map", Icon: Map },
 ];
 
+/** On phones, the camera sits in the middle of the bar. */
+const PHONE_ORDER = ["/friends", "/journal", "/identify", "/life-list", "/map"];
+
 /** Small red count, e.g. new friend requests on the Friends tab. */
 function Badge({ count, className = "" }: { count: number; className?: string }) {
   if (count <= 0) return null;
@@ -36,7 +39,24 @@ export function BottomNav({ friendRequests = 0 }: { friendRequests?: number }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-sand-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
       <ul className="mx-auto grid max-w-md grid-cols-5">
-        {tabs.map((tab) => (
+        {PHONE_ORDER.map((href) => tabs.find((t) => t.href === href)!).map((tab) =>
+          tab.href === "/identify" ? (
+            // Identify is the big round camera button in the middle, one tap from anywhere.
+            <li key={tab.href} className="flex justify-center">
+              <Link
+                href={tab.href}
+                aria-label="Identify an animal"
+                className={`flex flex-col items-center gap-1 pb-2 text-[11px] font-bold ${
+                  isActive(tab.href) ? "text-forest-700" : "text-bark-500"
+                }`}
+              >
+                <span className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-forest-600 text-white shadow-lg ring-4 ring-white transition-transform active:scale-95">
+                  <Camera className="h-7 w-7" strokeWidth={2.25} aria-hidden />
+                </span>
+                {tab.label}
+              </Link>
+            </li>
+          ) : (
           <li key={tab.href}>
             <Link
               href={tab.href}
@@ -55,7 +75,8 @@ export function BottomNav({ friendRequests = 0 }: { friendRequests?: number }) {
               {tab.label}
             </Link>
           </li>
-        ))}
+          ),
+        )}
       </ul>
     </nav>
   );

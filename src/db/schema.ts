@@ -198,6 +198,46 @@ export const reaction = pgTable(
   (t) => [primaryKey({ columns: [t.sightingId, t.userId] })],
 );
 
+// Comments on sightings, from the owner and their friends.
+export const comment = pgTable(
+  "comment",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sightingId: uuid("sighting_id")
+      .notNull()
+      .references(() => sighting.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    text: text("text").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("comment_sighting_idx").on(t.sightingId, t.createdAt)],
+);
+
+// The bell: things friends did that involve you.
+export const notification = pgTable(
+  "notification",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // Who gets the notification
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // Who did the thing
+    actorId: text("actor_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // reaction | comment | friend_request | friend_accepted
+    type: text("type").notNull(),
+    sightingId: uuid("sighting_id").references(() => sighting.id, { onDelete: "cascade" }),
+    commentId: uuid("comment_id").references(() => comment.id, { onDelete: "cascade" }),
+    readAt: timestamp("read_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("notification_user_idx").on(t.userId, t.createdAt)],
+);
+
 // Bird of the Week: one bird per area (a ~100 km grid square) per week, picked by Claude.
 export const weeklyBird = pgTable(
   "weekly_bird",

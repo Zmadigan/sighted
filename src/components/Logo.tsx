@@ -10,13 +10,14 @@ export function LogoMark({ className = "h-9 w-9" }: { className?: string }) {
   );
 }
 
-export function Logo({ href = "/" }: { href?: string }) {
+export function Logo({ href = "/", compact = false }: { href?: string; compact?: boolean }) {
   return (
     <Link href={href} className="flex items-center gap-2.5">
       <LogoMark />
       <span className="flex flex-col leading-tight sm:flex-row sm:items-baseline sm:gap-2">
         <span className="text-xl font-extrabold tracking-tight text-forest-800">Sighted</span>
-        <span className="text-xs text-bark-500 sm:text-sm">your wildlife journal</span>
+        {/* In the app header on phones there's no room for the tagline next to the icons. */}
+        <span className={`text-xs text-bark-500 sm:text-sm ${compact ? "hidden sm:inline" : ""}`}>your wildlife journal</span>
       </span>
     </Link>
   );

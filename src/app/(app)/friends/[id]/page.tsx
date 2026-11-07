@@ -1,11 +1,12 @@
 import { eq } from "drizzle-orm";
-import { ArrowLeft, CalendarDays, UserMinus } from "lucide-react";
+import { ArrowLeft, CalendarDays, MessageCircle, UserMinus } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { removeFriend } from "@/app/actions/friends";
 import { BadgeGrid, BadgeIcon, RankPill, StreakPill } from "@/components/Achievements";
 import { Avatar } from "@/components/Avatar";
 import { CategoryBadge } from "@/components/CategoryIcon";
+import { ZoomablePhoto } from "@/components/PhotoViewer";
 import { SightingThumb } from "@/components/SightingThumb";
 import { db } from "@/db";
 import { user } from "@/db/schema";
@@ -119,12 +120,11 @@ export default async function FriendPage({ params, searchParams }: PageProps<"/f
         <ul className="space-y-3">
           {sightings.map((s) => (
             <li key={s.id} className="card overflow-hidden">
-              <SightingThumb
-                src={s.hasPhoto ? photoUrl(s) : null}
-                category={s.category}
-                alt={s.commonName}
-                className={s.hasPhoto ? "max-h-72 w-full" : "h-24 w-full"}
-              />
+              {s.hasPhoto ? (
+                <ZoomablePhoto src={photoUrl(s)} alt={s.commonName} className="max-h-72 w-full" />
+              ) : (
+                <SightingThumb src={null} category={s.category} alt={s.commonName} className="h-24 w-full" />
+              )}
               <div className="space-y-1 p-4">
                 <CategoryBadge category={s.category} />
                 <p className="text-lg font-bold">{s.commonName}</p>
@@ -133,6 +133,12 @@ export default async function FriendPage({ params, searchParams }: PageProps<"/f
                   <CalendarDays className="h-4 w-4" aria-hidden /> {formatDate(s.observedOn)}
                 </p>
                 {s.notes && <p className="whitespace-pre-wrap pt-1 text-forest-800/90">{stripLocation(s.notes)}</p>}
+                <Link
+                  href={`/post/${s.id}`}
+                  className="inline-flex items-center gap-1.5 pt-2 text-sm font-semibold text-forest-600"
+                >
+                  <MessageCircle className="h-4 w-4" aria-hidden /> Reactions &amp; comments
+                </Link>
               </div>
             </li>
           ))}

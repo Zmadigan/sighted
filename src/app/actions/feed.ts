@@ -2,8 +2,9 @@
 
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { friendship, reaction, sighting } from "@/db/schema";
+import { friendship, notification, reaction, sighting } from "@/db/schema";
 import { getFeed, type FeedCursor } from "@/lib/feed";
+import { notify } from "@/lib/notifications";
 import { requireUser } from "@/lib/session";
 
 export async function loadMoreFeed(cursor: FeedCursor) {
@@ -35,6 +36,14 @@ export async function toggleReaction(sightingId: string): Promise<{ reacted: boo
     .returning();
   if (removed.length === 0) {
     await db.insert(reaction).values({ sightingId, userId: me.id }).onConflictDoNothing();
+    await notify(post.ownerId, me.id, "reaction", { sightingId });
+  } else {
+    // Taking back a "Nice spot!" also takes back its notification.
+    await db
+      .delete(notification)
+      .where(
+        and(eq(notification.type, "reaction"), eq(notification.actorId, me.id), eq(notification.sightingId, sightingId)),
+      );
   }
   const count = await db.$count(reaction, eq(reaction.sightingId, sightingId));
   return { reacted: removed.length === 0, count };

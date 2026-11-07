@@ -4,15 +4,18 @@ import { and, eq, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { friendRequest, friendship, user } from "@/db/schema";
+import { friendRequest, friendship, notification, user } from "@/db/schema";
 import { addFriendship, areFriends, findUserByInviteCode, searchPeople, type PersonResult } from "@/lib/friends";
+import { notify } from "@/lib/notifications";
 import { requireUser } from "@/lib/session";
 
 export async function acceptInvite(code: string) {
   const me = await requireUser();
   const inviter = await findUserByInviteCode(code);
   if (!inviter || inviter.id === me.id) redirect("/friends");
+  const alreadyFriends = await areFriends(me.id, inviter.id);
   await addFriendship(me.id, inviter.id);
+  if (!alreadyFriends) await notify(inviter.id, me.id, "friend_accepted");
   revalidatePath("/friends");
   redirect(`/friends?added=${encodeURIComponent(inviter.name)}`);
 }
@@ -59,10 +62,12 @@ export async function sendFriendRequest(toId: string): Promise<PersonResult["sta
     .where(and(eq(friendRequest.fromId, toId), eq(friendRequest.toId, me.id)));
   if (theyAsked) {
     await addFriendship(me.id, toId);
+    await notify(toId, me.id, "friend_accepted");
     revalidatePath("/", "layout");
     return "friend";
   }
-  await db.insert(friendRequest).values({ fromId: me.id, toId }).onConflictDoNothing();
+  const inserted = await db.insert(friendRequest).values({ fromId: me.id, toId }).onConflictDoNothing().returning();
+  if (inserted.length) await notify(toId, me.id, "friend_request");
   revalidatePath("/friends");
   return "requested";
 }
@@ -70,6 +75,9 @@ export async function sendFriendRequest(toId: string): Promise<PersonResult["sta
 export async function cancelFriendRequest(toId: string) {
   const me = await requireUser();
   await db.delete(friendRequest).where(and(eq(friendRequest.fromId, me.id), eq(friendRequest.toId, toId)));
+  await db
+    .delete(notification)
+    .where(and(eq(notification.type, "friend_request"), eq(notification.actorId, me.id), eq(notification.userId, toId)));
   revalidatePath("/friends");
 }
 
@@ -80,7 +88,10 @@ export async function respondToRequest(fromId: string, accept: boolean) {
     .from(friendRequest)
     .where(and(eq(friendRequest.fromId, fromId), eq(friendRequest.toId, me.id)));
   if (!request) return;
-  if (accept) await addFriendship(me.id, fromId);
+  if (accept) {
+    await addFriendship(me.id, fromId);
+    await notify(fromId, me.id, "friend_accepted");
+  }
   else await db.delete(friendRequest).where(and(eq(friendRequest.fromId, fromId), eq(friendRequest.toId, me.id)));
   revalidatePath("/", "layout");
 }

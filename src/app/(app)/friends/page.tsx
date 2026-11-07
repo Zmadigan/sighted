@@ -104,7 +104,7 @@ export default async function FriendsPage({ searchParams }: PageProps<"/friends"
 
       {feed &&
         (feed.posts.length > 0 ? (
-          <Feed initial={feed.posts} initialCursor={feed.next} />
+          <Feed initial={feed.posts} initialCursor={feed.next} meId={me.id} />
         ) : (
           <div className="card flex flex-col items-center gap-3 p-8 text-center">
             <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-forest-100 text-forest-700">
