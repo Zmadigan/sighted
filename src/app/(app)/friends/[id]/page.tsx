@@ -7,6 +7,7 @@ import { BadgeGrid, BadgeIcon, RankPill, StreakPill } from "@/components/Achieve
 import { Avatar } from "@/components/Avatar";
 import { CategoryBadge } from "@/components/CategoryIcon";
 import { ZoomablePhoto } from "@/components/PhotoViewer";
+import { ProfileMenu } from "@/components/ReportMenu";
 import { SightingThumb } from "@/components/SightingThumb";
 import { db } from "@/db";
 import { user } from "@/db/schema";
@@ -50,12 +51,13 @@ export default async function FriendPage({ params, searchParams }: PageProps<"/f
       </Link>
       <div className="flex items-center gap-4">
         <Avatar userId={id} name={friend.name} className="h-16 w-16" />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="truncate text-2xl font-extrabold">{friend.name}</h1>
           <p className="text-sm text-bark-500">
             {lifeList.length} species · {sightings.length} sightings
           </p>
         </div>
+        <ProfileMenu userId={id} userName={friend.name} />
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <RankPill species={stats.species} />

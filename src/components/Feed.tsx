@@ -10,6 +10,7 @@ import { formatDate, timeAgo } from "@/lib/format";
 import { CategoryBadge } from "./CategoryIcon";
 import { Comments } from "./Comments";
 import { PhotoViewer } from "./PhotoViewer";
+import { ReportMenu } from "./ReportMenu";
 
 function NiceSpot({ post }: { post: FeedPost }) {
   const [state, setState] = useState({ reacted: post.reactedByMe, count: post.reactions });
@@ -40,8 +41,20 @@ function NiceSpot({ post }: { post: FeedPost }) {
   );
 }
 
-export function Post({ post, meId, onOpenPhoto }: { post: FeedPost; meId: string; onOpenPhoto?: () => void }) {
+export function Post({
+  post,
+  meId,
+  onOpenPhoto,
+  onHidden,
+}: {
+  post: FeedPost;
+  meId: string;
+  onOpenPhoto?: () => void;
+  /** After reporting the post or blocking its owner. */
+  onHidden?: (blocked: boolean) => void;
+}) {
   const commentInput = useRef<HTMLTextAreaElement>(null);
+  const [hidden, setHidden] = useState(false);
   const [commentCount, setCommentCount] = useState(post.comments.length);
   const [viewing, setViewing] = useState(false);
   // Times are relative ("2h ago"), so only show them once the browser has the current time.
@@ -69,14 +82,29 @@ export function Post({ post, meId, onOpenPhoto }: { post: FeedPost; meId: string
     </>
   );
 
+  if (hidden) {
+    return <p className="card p-4 text-center text-sm text-bark-500">You won&apos;t see this post anymore.</p>;
+  }
+
   return (
     <article className="card overflow-hidden">
       {post.isMine ? (
         <div className="flex items-center gap-3 p-3">{header}</div>
       ) : (
-        <Link href={`/friends/${post.ownerId}`} className="flex items-center gap-3 p-3">
-          {header}
-        </Link>
+        <div className="flex items-center gap-1 pr-2">
+          <Link href={`/friends/${post.ownerId}`} className="flex min-w-0 flex-1 items-center gap-3 p-3">
+            {header}
+          </Link>
+          <ReportMenu
+            target={{ kind: "post", sightingId: post.id }}
+            userId={post.ownerId}
+            userName={post.ownerName}
+            onHidden={(blocked) => {
+              setHidden(true);
+              onHidden?.(blocked);
+            }}
+          />
+        </div>
       )}
       {post.photoUrl && (
         <button
@@ -170,6 +198,10 @@ export function Feed({ initial, initialCursor, meId }: { initial: FeedPost[]; in
           post={post}
           meId={meId}
           onOpenPhoto={() => setViewer(photoPosts.findIndex((p) => p.id === post.id))}
+          onHidden={(blocked) => {
+            // Blocking someone removes all of their posts from your feed.
+            if (blocked) setPosts((all) => all.filter((p) => p.ownerId !== post.ownerId || p.id === post.id));
+          }}
         />
       ))}
       {viewer !== null && photoPosts[viewer] && (

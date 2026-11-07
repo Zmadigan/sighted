@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { and, desc, eq, ilike, inArray, ne, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { friendRequest, friendship, sighting, user } from "@/db/schema";
+import { notBlockedWith } from "./moderation";
 
 /** The user's invite code, created the first time they open the Friends tab. */
 export async function getInviteCode(userId: string) {
@@ -67,6 +68,7 @@ export async function searchPeople(meId: string, query: string): Promise<PersonR
     .where(
       and(
         ne(user.id, meId),
+        notBlockedWith(meId, user.id),
         byEmail ? sql`lower(${user.email}) = ${q.toLowerCase()}` : ilike(user.name, pattern),
       ),
     )

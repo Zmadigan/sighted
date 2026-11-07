@@ -37,6 +37,14 @@ export default function TermsPage() {
         <li>Only upload photos you have the right to share, and nothing illegal, harmful or hateful.</li>
       </ul>
 
+      <h2>Be kind</h2>
+      <p>
+        There&apos;s no place on Sighted for harassment, bullying, hate, spam, nudity or other objectionable
+        content. You can report any post, comment or person from its &ldquo;&hellip;&rdquo; menu, and block anyone you
+        don&apos;t want to hear from. We review reports within 24 hours, remove content that breaks these rules, and may
+        remove accounts that post it.
+      </p>
+
       <h2>Respect wildlife</h2>
       <p>
         Please keep a safe distance, don&apos;t disturb animals or their habitats, and follow local laws and park rules.

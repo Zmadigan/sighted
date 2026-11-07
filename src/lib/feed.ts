@@ -1,7 +1,7 @@
 import "server-only";
 import { and, desc, eq, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { birdChallenge, friendship, reaction, sighting, user, weeklyBird } from "@/db/schema";
+import { birdChallenge, friendship, reaction, report, sighting, user, weeklyBird } from "@/db/schema";
 import { commentsFor, type CommentView } from "./comments";
 
 export const FEED_PAGE_SIZE = 10;
@@ -78,6 +78,7 @@ export async function getFeed(meId: string, cursor: FeedCursor): Promise<{ posts
         inArray(sighting.userId, people),
         eq(sighting.isPrivate, false),
         isNotNull(sighting.photo),
+        notReportedBy(meId),
         after,
       ),
     )
@@ -100,7 +101,7 @@ export async function getPost(meId: string, sightingId: string): Promise<FeedPos
     .select({ ...postColumns(meId), isPrivate: sighting.isPrivate })
     .from(sighting)
     .innerJoin(user, eq(user.id, sighting.userId))
-    .where(eq(sighting.id, sightingId));
+    .where(and(eq(sighting.id, sightingId), notReportedBy(meId)));
   if (!row) return null;
   if (row.ownerId !== meId) {
     if (row.isPrivate) return null;
@@ -111,6 +112,11 @@ export async function getPost(meId: string, sightingId: string): Promise<FeedPos
     if (!friend) return null;
   }
   return (await toPosts(meId, [row]))[0];
+}
+
+/** Posts you've reported disappear for you right away. */
+function notReportedBy(meId: string) {
+  return sql`not exists (select 1 from ${report} where ${report.reporterId} = ${meId} and ${report.kind} = 'post' and ${report.sightingId} = ${sighting.id})`;
 }
 
 function postColumns(meId: string) {

@@ -1,20 +1,27 @@
 import { eq } from "drizzle-orm";
-import { ArrowLeft, CreditCard, Crown } from "lucide-react";
+import { ArrowLeft, CreditCard, Crown, ShieldAlert } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { openBillingPortal } from "@/app/actions/billing";
+import { BlockedList } from "@/components/BlockedList";
 import { DeleteAccount } from "@/components/DeleteAccount";
 import { DisplayName } from "@/components/FriendsClient";
 import { LogoutButton } from "@/components/LogoutButton";
 import { db } from "@/db";
 import { user } from "@/db/schema";
+import { isAdmin, listBlocked, openReportCount } from "@/lib/moderation";
 import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Settings · Sighted" };
 
 export default async function AccountPage() {
   const me = await requireUser();
-  const [row] = await db.select({ stripeCustomerId: user.stripeCustomerId }).from(user).where(eq(user.id, me.id));
+  const admin = isAdmin(me.email);
+  const [[row], blocked, openReports] = await Promise.all([
+    db.select({ stripeCustomerId: user.stripeCustomerId }).from(user).where(eq(user.id, me.id)),
+    listBlocked(me.id),
+    admin ? openReportCount() : Promise.resolve(0),
+  ]);
   const isPro = me.plan === "pro";
 
   return (
@@ -58,6 +65,20 @@ export default async function AccountPage() {
           </Link>
         )}
       </section>
+
+      <section className="card space-y-2 p-4">
+        <p className="font-bold">Blocked people</p>
+        <BlockedList initial={blocked} />
+      </section>
+
+      {admin && (
+        <Link href="/admin/reports" className="card flex items-center gap-2 p-4 font-bold">
+          <ShieldAlert className="h-5 w-5 text-red-700" aria-hidden /> Review reports
+          {openReports > 0 && (
+            <span className="ml-auto rounded-full bg-red-600 px-2 py-0.5 text-xs text-white">{openReports}</span>
+          )}
+        </Link>
+      )}
 
       <section className="card flex items-center justify-between p-4">
         <div className="flex gap-4 text-sm">

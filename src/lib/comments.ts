@@ -1,7 +1,8 @@
 import "server-only";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { comment, friendship, sighting, user } from "@/db/schema";
+import { comment, friendship, report, sighting, user } from "@/db/schema";
+import { notBlockedWith } from "./moderation";
 
 export const MAX_COMMENT_LENGTH = 500;
 
@@ -49,7 +50,13 @@ export async function commentsFor(meId: string, sightings: { id: string; ownerId
     })
     .from(comment)
     .innerJoin(user, eq(user.id, comment.userId))
-    .where(inArray(comment.sightingId, [...owners.keys()]))
+    .where(
+      and(
+        inArray(comment.sightingId, [...owners.keys()]),
+        notBlockedWith(meId, comment.userId),
+        sql`not exists (select 1 from ${report} where ${report.reporterId} = ${meId} and ${report.commentId} = ${comment.id})`,
+      ),
+    )
     .orderBy(asc(comment.createdAt));
   for (const r of rows) {
     const list = result.get(r.sightingId) ?? [];

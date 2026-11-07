@@ -3,6 +3,7 @@ import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { comment, notification, sighting, user } from "@/db/schema";
+import { hiddenUserIds } from "./moderation";
 
 export type NotificationType = "reaction" | "comment" | "friend_request" | "friend_accepted";
 
@@ -13,9 +14,12 @@ export async function notify(
   type: NotificationType,
   extra: { sightingId?: string; commentId?: string } = {},
 ) {
-  const ids = [...new Set([recipients].flat())].filter((id) => id !== actorId);
+  let ids = [...new Set([recipients].flat())].filter((id) => id !== actorId);
   if (ids.length === 0) return;
   try {
+    const hidden = new Set(await hiddenUserIds(actorId));
+    ids = ids.filter((id) => !hidden.has(id));
+    if (ids.length === 0) return;
     await db.insert(notification).values(ids.map((userId) => ({ userId, actorId, type, ...extra })));
   } catch (error) {
     console.error("Couldn't save notification", error);

@@ -1,7 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { sighting } from "@/db/schema";
+import { report, sighting } from "@/db/schema";
 import { areFriends } from "@/lib/friends";
+import { isAdmin } from "@/lib/moderation";
 import { photoResponse } from "@/lib/photo-storage";
 import { getCurrentUser } from "@/lib/session";
 
@@ -18,9 +19,13 @@ export async function GET(_request: Request, { params }: RouteContext<"/api/phot
     .from(sighting)
     .where(eq(sighting.id, id));
   const isOwner = row?.ownerId === user.id;
-  if (!row || (!isOwner && (row.isPrivate || !(await areFriends(user.id, row.ownerId))))) {
-    return new Response("Not found", { status: 404 });
-  }
+  const allowed =
+    row &&
+    (isOwner ||
+      (!row.isPrivate && (await areFriends(user.id, row.ownerId))) ||
+      // Admins can see photos of reported posts so they can review them.
+      (isAdmin(user.email) && (await db.$count(report, and(eq(report.sightingId, id), eq(report.kind, "post")))) > 0));
+  if (!row || !allowed) return new Response("Not found", { status: 404 });
 
   // Private to this browser; cached for a day (URLs include ?v= when photos change)
   const response = await photoResponse(row.photo, "private, max-age=86400");

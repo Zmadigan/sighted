@@ -284,4 +284,52 @@ export const networkUsage = pgTable(
   (t) => [primaryKey({ columns: [t.ipHash, t.month] })],
 );
 
+// "blocker" blocked "blocked": they're unfriended, can't find or friend each other, and never see
+// each other's comments or notifications.
+export const userBlock = pgTable(
+  "user_block",
+  {
+    blockerId: text("blocker_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    blockedId: text("blocked_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.blockerId, t.blockedId] }), index("user_block_blocked_idx").on(t.blockedId)],
+);
+
+// Reports of posts, comments or people, reviewed on /admin/reports.
+export const report = pgTable(
+  "report",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reporterId: text("reporter_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // The person whose content (or profile) was reported
+    targetUserId: text("target_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // post | comment | user
+    kind: text("kind").notNull(),
+    sightingId: uuid("sighting_id").references(() => sighting.id, { onDelete: "set null" }),
+    commentId: uuid("comment_id").references(() => comment.id, { onDelete: "set null" }),
+    // spam | harassment | inappropriate | misleading | other
+    reason: text("reason").notNull(),
+    details: text("details"),
+    // A copy of what was reported (comment text or animal name), kept even if it's deleted later
+    snapshot: text("snapshot"),
+    // open | removed | dismissed
+    status: text("status").notNull().default("open"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at"),
+  },
+  (t) => [
+    index("report_status_idx").on(t.status, t.createdAt),
+    index("report_reporter_idx").on(t.reporterId),
+  ],
+);
+
 export type Sighting = typeof sighting.$inferSelect;

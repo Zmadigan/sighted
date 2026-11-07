@@ -6,6 +6,7 @@ import { forwardRef, useState, useTransition } from "react";
 import { addComment, deleteComment } from "@/app/actions/comments";
 import type { CommentView } from "@/lib/comments";
 import { Avatar } from "./Avatar";
+import { ReportMenu } from "./ReportMenu";
 import { TimeAgo } from "./TimeAgo";
 
 /**
@@ -67,6 +68,17 @@ export const Comments = forwardRef<
                   <TimeAgo iso={c.createdAt} />
                 </p>
               </div>
+              {c.userId !== meId && (
+                <ReportMenu
+                  small
+                  target={{ kind: "comment", commentId: c.id }}
+                  userId={c.userId}
+                  userName={c.userName}
+                  onHidden={(blocked) =>
+                    update(comments.filter((x) => x.id !== c.id && !(blocked && x.userId === c.userId)))
+                  }
+                />
+              )}
               {c.canDelete && (
                 <button
                   type="button"

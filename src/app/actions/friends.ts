@@ -6,13 +6,14 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { friendRequest, friendship, notification, user } from "@/db/schema";
 import { addFriendship, areFriends, findUserByInviteCode, searchPeople, type PersonResult } from "@/lib/friends";
+import { isBlockedEitherWay } from "@/lib/moderation";
 import { notify } from "@/lib/notifications";
 import { requireUser } from "@/lib/session";
 
 export async function acceptInvite(code: string) {
   const me = await requireUser();
   const inviter = await findUserByInviteCode(code);
-  if (!inviter || inviter.id === me.id) redirect("/friends");
+  if (!inviter || inviter.id === me.id || (await isBlockedEitherWay(me.id, inviter.id))) redirect("/friends");
   const alreadyFriends = await areFriends(me.id, inviter.id);
   await addFriendship(me.id, inviter.id);
   if (!alreadyFriends) await notify(inviter.id, me.id, "friend_accepted");
@@ -53,7 +54,7 @@ export async function sendFriendRequest(toId: string): Promise<PersonResult["sta
   const me = await requireUser();
   if (toId === me.id) return null;
   const [target] = await db.select({ id: user.id }).from(user).where(eq(user.id, toId));
-  if (!target) return null;
+  if (!target || (await isBlockedEitherWay(me.id, toId))) return null;
   if (await areFriends(me.id, toId)) return "friend";
 
   const [theyAsked] = await db
